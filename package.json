@@ -1,0 +1,12 @@
+{
+  "name": "click-recorder",
+  "version": "1.0.0",
+  "description": "A CLI tool to record and replay mouse clicks",
+  "main": "recorder.js",
+  "scripts": {
+    "start": "node recorder.js"
+  },
+  "dependencies": {
+    "@nut-tree-fork/nut-js": "*"
+  }
+}
