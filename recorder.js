@@ -2,6 +2,7 @@ const { spawn } = require('child_process');
 const { mouse, Point, Button } = require('@nut-tree-fork/nut-js');
 const fs = require('fs');
 const readline = require('readline');
+const { ReplayHumanizer } = require('./humanizer');
 
 let recording = false;
 let replaying = false;
@@ -37,16 +38,8 @@ const rl = readline.createInterface({
     output: process.stdout
 });
 
-function randomizePosition(x, y, radius) {
-    const angle = Math.random() * Math.PI * 2;
-    const distance = Math.random() * radius;
-    const offsetX = Math.cos(angle) * distance;
-    const offsetY = Math.sin(angle) * distance;
-    return {
-        x: x + offsetX,
-        y: y + offsetY
-    };
-}
+// Legacy randomizePosition kept for reference; replay now uses ReplayHumanizer.
+// function randomizePosition(x, y, radius) { ... }
 
 function askQuestion(query) {
     isAskingForInput = true;
@@ -195,108 +188,217 @@ function startSwiftMonitor() {
     });
 }
 
+async function askSessionSetup() {
+    const humanize = await askQuestion("Humanize replay? (y/n, default y): ");
+    const useHumanizer = humanize.trim().toLowerCase() !== 'n';
+    const durAnswer = await askQuestion("Session duration in minutes (default 120): ");
+    const durationMin = parseInt(durAnswer, 10) > 0 ? parseInt(durAnswer, 10) : 120;
+    return { useHumanizer, durationMin };
+}
+
 async function startReplay(currentEvents) {
-    console.log("Starting replay...");
+    const { useHumanizer, durationMin } = await askSessionSetup();
+
     replaying = true;
     paused = false;
-    replayIndex = 0;
-    
-    // Use local variable for events to avoid confusion
-    const activeEvents = currentEvents;
 
-    while (replaying) {
-        if (paused) {
-            await sleep(100);
-            continue;
+    // Hard stop after the planned duration
+    setTimeout(() => {
+        console.log(`\nSession time limit reached (${durationMin}min). Exiting.`);
+        process.exit(0);
+    }, durationMin * 60_000);
+
+    if (useHumanizer) {
+        const humanizer = new ReplayHumanizer({
+            profileOverrides: { plannedDurationMinutes: durationMin }
+        });
+        const p = humanizer.profile;
+        console.log(
+            `Starting humanized replay (${durationMin}min) | seed: ${humanizer.seed} ` +
+            `| style: ${p.tempoStyle} | maxFatigue: ${p.maxFatigue.toFixed(3)}`
+        );
+
+        while (replaying) {
+            const plan = humanizer.plan(currentEvents);
+            const elapsed = (humanizer.sessionElapsed / 60000).toFixed(1);
+            console.log(`Loop ${humanizer.loopCount} | session elapsed: ${elapsed}min`);
+
+            await executePlan(plan, currentEvents.length, humanizer);
+
+            if (!replaying) break;
+
+            // Brief inter-loop gap
+            await sleep(800 + Math.random() * 400);
+
+            while (paused) await sleep(100);
         }
+    } else {
+        console.log(`Starting raw replay (${durationMin}min, no humanization)...`);
+        let loopCount = 0;
 
-        if (replayIndex >= activeEvents.length) {
-            console.log("Replay finished.");
-            break; 
+        while (replaying) {
+            loopCount++;
+            console.log(`Loop ${loopCount}`);
+
+            await executeRaw(currentEvents);
+
+            if (!replaying) break;
+            while (paused) await sleep(100);
         }
-
-        const event = activeEvents[replayIndex];
-        const prevTime = replayIndex > 0 ? activeEvents[replayIndex - 1].time : 0;
-        const waitTime = event.time - prevTime;
-
-        if (waitTime > 0) {
-             await sleep(waitTime);
-        }
-        
-        while (paused) {
-            await sleep(100);
-        }
-        
-        if (!replaying) break;
-
-        try {
-            const randPos = randomizePosition(event.x, event.y, 2);
-            await mouse.setPosition(new Point(randPos.x, randPos.y));
-            await mouse.click(Button.LEFT);
-            console.log(`Replayed click ${replayIndex + 1}/${activeEvents.length} at (${event.x}, ${event.y}) -> Randomized: (${randPos.x.toFixed(0)}, ${randPos.y.toFixed(0)})`);
-        } catch (err) {
-            console.error("Error performing click:", err);
-        }
-
-        replayIndex++;
     }
+
     replaying = false;
 }
 
 async function startPlaylistReplay() {
-    console.log("Starting Playlist Replay (Random Order)...");
+    const { useHumanizer, durationMin } = await askSessionSetup();
+
     replaying = true;
     paused = false;
-    
-    while (replaying) {
-        // Pick random recording
-        const randomIndex = Math.floor(Math.random() * playlist.length);
-        const recording = playlist[randomIndex];
-        console.log(`Playing recording: ${recording.name}`);
-        
-        // Play it (reuse startReplay logic but we need to wait for it)
-        // We can't reuse startReplay directly because it sets global 'replaying' to false at end
-        // Let's refactor startReplay to be awaitable and not manage global state fully?
-        // Or just inline the logic here or call a helper.
-        
-        // Actually, let's just call a helper that plays one set of events.
-        await playEvents(recording.events);
-        
-        if (!replaying) break;
-        
-        console.log("Set finished. Waiting 1s before next set...");
-        await sleep(1000);
-        
-        while (paused) {
-            await sleep(100);
+
+    // Hard stop after the planned duration
+    setTimeout(() => {
+        console.log(`\nSession time limit reached (${durationMin}min). Exiting.`);
+        process.exit(0);
+    }, durationMin * 60_000);
+
+    if (useHumanizer) {
+        const humanizer = new ReplayHumanizer({
+            profileOverrides: { plannedDurationMinutes: durationMin }
+        });
+        const p = humanizer.profile;
+        console.log(
+            `Starting humanized playlist (${durationMin}min) | seed: ${humanizer.seed} ` +
+            `| style: ${p.tempoStyle} | maxFatigue: ${p.maxFatigue.toFixed(3)}`
+        );
+
+        while (replaying) {
+            const randomIndex = Math.floor(Math.random() * playlist.length);
+            const rec = playlist[randomIndex];
+
+            const plan = humanizer.plan(rec.events);
+            const elapsed = (humanizer.sessionElapsed / 60000).toFixed(1);
+            console.log(`Loop ${humanizer.loopCount} (${rec.name}) | session elapsed: ${elapsed}min`);
+
+            await executePlan(plan, rec.events.length, humanizer);
+
+            if (!replaying) break;
+
+            // Brief inter-recording gap
+            await sleep(800 + Math.random() * 400);
+
+            while (paused) await sleep(100);
+        }
+    } else {
+        console.log(`Starting raw playlist (${durationMin}min, no humanization)...`);
+        let loopCount = 0;
+
+        while (replaying) {
+            loopCount++;
+            const randomIndex = Math.floor(Math.random() * playlist.length);
+            const rec = playlist[randomIndex];
+            console.log(`Loop ${loopCount} (${rec.name})`);
+
+            await executeRaw(rec.events);
+
+            if (!replaying) break;
+            while (paused) await sleep(100);
         }
     }
 }
 
-async function playEvents(eventsToPlay) {
-    let localIndex = 0;
-    while (replaying && localIndex < eventsToPlay.length) {
-        if (paused) {
-            await sleep(100);
-            continue;
-        }
-        
-        const event = eventsToPlay[localIndex];
-        const prevTime = localIndex > 0 ? eventsToPlay[localIndex - 1].time : 0;
+/**
+ * Execute raw events with no humanization — exact original timing and positions.
+ */
+async function executeRaw(rawEvents) {
+    for (let i = 0; i < rawEvents.length; i++) {
+        if (!replaying) return;
+        if (paused) { await sleep(100); i--; continue; }
+
+        const event = rawEvents[i];
+        const prevTime = i > 0 ? rawEvents[i - 1].time : 0;
         const waitTime = event.time - prevTime;
 
         if (waitTime > 0) await sleep(waitTime);
-        
+
         while (paused) await sleep(100);
         if (!replaying) return;
 
         try {
-            const randPos = randomizePosition(event.x, event.y, 2);
-            await mouse.setPosition(new Point(randPos.x, randPos.y));
+            await mouse.setPosition(new Point(event.x, event.y));
             await mouse.click(Button.LEFT);
-            console.log(`Click (${event.x}, ${event.y}) -> Randomized: (${randPos.x.toFixed(0)}, ${randPos.y.toFixed(0)})`);
-        } catch (err) { console.error(err); }
-        
+            console.log(`  Click ${i + 1}/${rawEvents.length} (${event.x}, ${event.y}) wait=${waitTime}ms`);
+        } catch (err) {
+            console.error("Error performing click:", err);
+        }
+    }
+}
+
+/**
+ * Execute a humanised action plan.
+ * Pauses can trigger between any two clicks (mid-loop).
+ *
+ * @param {Array}            plan
+ * @param {number}           totalCount
+ * @param {ReplayHumanizer}  [humanizer] – if provided, pause checks happen per click
+ */
+async function executePlan(plan, totalCount, humanizer) {
+    let localIndex = 0;
+
+    while (replaying && localIndex < plan.length) {
+        if (paused) {
+            await sleep(100);
+            continue;
+        }
+
+        const action = plan[localIndex];
+
+        // --- Wait (humanised delta) ---
+        if (action.waitMs > 0) {
+            await sleep(Math.round(action.waitMs));
+        }
+
+        while (paused) await sleep(100);
+        if (!replaying) return;
+
+        // --- Pre-hesitation imperfection ---
+        if (action.imperfection && action.imperfection.type === 'pre-hesitation') {
+            await sleep(Math.round(action.imperfection.delayMs));
+        }
+
+        try {
+            await mouse.setPosition(new Point(Math.round(action.x), Math.round(action.y)));
+
+            // --- Delayed-commit imperfection ---
+            if (action.imperfection && action.imperfection.type === 'delayed-commit') {
+                await sleep(Math.round(action.imperfection.delayMs));
+            }
+
+            await mouse.click(Button.LEFT);
+
+            const tag = action.meta.hesitating ? ' [hesitation]' : '';
+            const impTag = action.imperfection ? ` [${action.imperfection.type}]` : '';
+            console.log(
+                `Click ${localIndex + 1}/${totalCount} ` +
+                `(${Math.round(action.x)}, ${Math.round(action.y)}) ` +
+                `wait=${Math.round(action.waitMs)}ms ` +
+                `fatigue=${action.meta.fatigue.toFixed(2)}${tag}${impTag}`
+            );
+
+        } catch (err) {
+            console.error("Error performing click:", err);
+        }
+
+        // --- Check for a natural pause between clicks ---
+        if (humanizer) {
+            const pause = humanizer.checkPause();
+            if (pause.shouldPause) {
+                const pauseSec = (pause.durationMs / 1000).toFixed(1);
+                console.log(`  ☕ ${pause.type} pause (${pauseSec}s) after click ${localIndex + 1}...`);
+                await sleep(Math.round(pause.durationMs));
+            }
+        }
+
         localIndex++;
     }
 }
