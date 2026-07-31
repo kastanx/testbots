@@ -1,0 +1,66 @@
+{
+  "_readme": [
+    "pick strategies: leftmost, rightmost, topmost, bottommost, largest, smallest,",
+    "nearest_center, index (with sort: x|y|area and index: 0-based, negatives count",
+    "from the end). Optional per-zone keys: roi [x,y,w,h] restricts where blobs are",
+    "accepted, min_area/max_area override the globals, expected_blobs skips the",
+    "click when the blob count does not match the zone's fingerprint.",
+    "transit has no entry on purpose - the bot never clicks while in transit."
+  ],
+
+  "monitor": 0,
+  "target_fps": 30,
+
+  "hsv_lo": [40, 60, 60],
+  "hsv_hi": [85, 255, 255],
+  "min_area": 400,
+  "max_area": 0,
+  "morph_kernel": 3,
+
+  "conf_threshold": 0.70,
+  "vote_window": 5,
+  "vote_needed": 3,
+  "classify_every_n": 8,
+  "classify_imgsz": 224,
+  "classify_max_width": 1280,
+
+  "click_cooldown_ms": 1500,
+  "stable_windows_required": 2,
+
+  "adjacency_enabled": false,
+  "adjacency_unanimous_override": true,
+
+  "pre_click_delay_ms": [30, 120],
+  "idle_pause_chance": 0.02,
+  "idle_pause_ms": [2000, 6000],
+
+  "triage_enabled": true,
+  "triage_conf_below": 0.60,
+  "triage_max_per_minute": 20,
+
+  "overlay_enabled": true,
+  "overlay_scale": 0.5,
+
+  "zones": {
+    "spot_01": { "pick": "largest" },
+    "spot_02": { "pick": "largest" },
+    "spot_03": { "pick": "largest" },
+    "spot_04": { "pick": "largest" },
+    "spot_05": { "pick": "largest" },
+    "spot_06": { "pick": "largest" },
+    "spot_07": { "pick": "largest" },
+    "spot_08": { "pick": "largest" },
+    "spot_09": { "pick": "largest" },
+    "spot_10": { "pick": "largest" },
+    "spot_11": { "pick": "largest" },
+    "spot_12": { "pick": "largest" },
+    "spot_13": { "pick": "largest" },
+    "spot_14": { "pick": "largest" },
+    "spot_15": { "pick": "largest" },
+    "spot_16": { "pick": "largest" },
+    "spot_17": { "pick": "largest" },
+    "spot_18": { "pick": "largest" },
+    "spot_19": { "pick": "largest" },
+    "spot_20": { "pick": "largest" }
+  }
+}

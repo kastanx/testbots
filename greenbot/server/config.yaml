@@ -1,0 +1,66 @@
+# Single source of truth for the inference service AND the HSV tools.
+# Model paths are relative to THIS file's directory, never to the process CWD.
+
+host: 127.0.0.1
+port: 8765
+
+# yolo = trained clickable detector, hsv = threshold fallback.
+# Swapping this must not require any change in the consumer.
+# Phase 1 decision test on session_20260730_2024 came out Option A: HSV boxes the
+# green agility platforms cleanly, 0 of 1251 boxes on UI. Revisit once frames
+# with green-wearing players exist.
+detector: hsv
+
+models:
+  classifier: models/location_cls.pt
+  detector: models/clickable_det.pt
+
+classify_imgsz: 224
+detect_imgsz: 640
+detect_conf: 0.25
+
+# Below this the location is still reported honestly, never remapped or guessed.
+# The consumer owns any smoothing - the service is stateless.
+location_conf_threshold: 0.70
+
+# Used by the hsv detector, tools/propose_boxes.py and tools/tune_hsv.py.
+hsv:
+  lo: [40, 60, 60]
+  hi: [85, 255, 255]
+  min_area: 150
+  morph_kernel: 3
+
+# /analyze/screen grabs the screen itself instead of taking an upload.
+# It captures at native resolution, downscales to detect_width for inference so
+# the models see what the collector trained them on, then scales the boxes back
+# up - so every coordinate it returns is in SCREEN pixels, ready to click.
+capture:
+  monitor: 0
+  detect_width: 1280
+
+# Which of the green boxes actually matters, per location.
+# Every spot shows several identical-looking platforms at once, so the choice is
+# geometric, not visual. Run `python tools/pick_review.py`, look at the sheet for
+# a spot, and set the strategy whose highlighted box is the one you want.
+#
+# pick: largest | smallest | leftmost | rightmost | topmost | bottommost
+#     | nearest_center | index (with sort: x|y|area and index: 0-based, negatives
+#       count from the end)
+# optional per spot: roi [x, y, w, h] to ignore boxes outside a region,
+#                    min_area / max_area to override the global thresholds.
+#
+# A location with no entry here returns target: null - the service still lists
+# everything it saw in `clickables`. transit deliberately has no entry.
+#
+# Fitted from 149 hand-labelled frames via tools/label_targets.py --prefer
+# nearest_point. Geometric extremes were wrong at half the spots (`largest`
+# scored 0% at spot_02, spot_04 and spot_05), so every rule here is the learned
+# position of the platform actually clicked. Re-check with:
+#   run.bat tools\label_targets.py --verify
+targets:
+  spot_01: { pick: nearest_point, point: [0.4758, 0.6082] }
+  spot_02: { pick: nearest_point, point: [0.5578, 0.7257] }
+  spot_03: { pick: nearest_point, point: [0.5348, 0.4188] }
+  spot_04: { pick: nearest_point, point: [0.5254, 0.4151] }
+  spot_05: { pick: nearest_point, point: [0.5098, 0.4179] }
+  spot_06: { pick: nearest_point, point: [0.4508, 0.4095] }

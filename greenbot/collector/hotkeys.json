@@ -1,0 +1,19 @@
+{
+  "_comment": [
+    "Global hotkeys for capture mode, tried in order - the first that registers wins,",
+    "and any extras that also register work too. They are GLOBAL, so whatever you put",
+    "here is swallowed system-wide while the collector is running in capture mode.",
+    "",
+    "That is why the defaults are Alt+Q/W/E and not bare Q/W/E: a bare letter would",
+    "stop that letter reaching game chat, and toggle recording every time you typed it.",
+    "Alt+ chords sit under the same fingers but never fire while typing.",
+    "",
+    "Bare letters ARE allowed if you accept that trade-off - set \"toggle\": [\"W\"].",
+    "Accelerator syntax: https://www.electronjs.org/docs/latest/api/accelerator",
+    "",
+    "Label mode unregisters all of these so they cannot fight the box editor."
+  ],
+  "prev": ["Alt+Q", "F7"],
+  "toggle": ["Alt+W", "F8"],
+  "next": ["Alt+E", "F9"]
+}

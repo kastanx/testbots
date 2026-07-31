@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:;" />
+  <title>Click Recorder</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <strong>Click Recorder</strong>
+    <button id="btnHotkeys" class="hotkey-toggle" title="Global hotkeys: R record · Space capture · S stop · P play">
+      <span class="dot" id="monitorDot"></span>
+      <span id="hotkeyLabel">Hotkeys on</span>
+    </button>
+  </div>
+
+  <div class="topbar-actions">
+    <button id="btnRecord" class="btn btn-record">
+      <span class="rec-dot"></span> Record <kbd>R</kbd>
+    </button>
+    <button id="btnPlay" class="btn btn-play">Play <kbd>P</kbd></button>
+    <button id="btnPause" class="btn" hidden>Pause</button>
+    <button id="btnStop" class="btn btn-stop" hidden>Stop <kbd>S</kbd></button>
+
+    <span class="sep"></span>
+
+    <label class="toggle" title="Apply human-like timing and jitter during playback">
+      <input type="checkbox" id="optHumanize" checked /> Humanize
+    </label>
+    <label class="dur">
+      for
+      <input type="number" id="optDuration" value="120" min="1" max="1440" /> min
+    </label>
+
+    <span class="sep"></span>
+
+    <button id="btnSave" class="btn btn-primary" disabled>Save <kbd>Ctrl+S</kbd></button>
+  </div>
+</header>
+
+<main class="layout">
+
+  <!-- ------------------------------------------------ recordings sidebar -->
+  <aside class="sidebar">
+    <div class="panel-head">
+      <span>Recordings</span>
+      <button id="btnNew" class="icon-btn" title="New empty recording">+</button>
+    </div>
+    <ul id="recordingList" class="recording-list"></ul>
+    <div class="sidebar-foot">
+      <button id="btnReveal" class="link-btn" title="Show recordings.json in Explorer">recordings.json</button>
+    </div>
+  </aside>
+
+  <!-- ----------------------------------------------------- canvas editor -->
+  <section class="stage">
+    <div class="panel-head">
+      <input id="recordingName" class="name-input" placeholder="Recording name" spellcheck="false" />
+      <div class="stage-tools">
+        <button id="btnAddHere" class="btn btn-sm" title="Add a click using the current cursor position">Add at cursor</button>
+        <button id="btnPick" class="btn btn-sm" title="Countdown, then capture wherever the cursor is">Pick from screen</button>
+        <button id="btnFit" class="btn btn-sm" title="Reset zoom to fit">Fit</button>
+        <button id="btnUndo" class="btn btn-sm" title="Undo (Ctrl+Z)">Undo</button>
+        <button id="btnRedo" class="btn btn-sm" title="Redo (Ctrl+Y)">Redo</button>
+      </div>
+    </div>
+
+    <div class="canvas-wrap" id="canvasWrap">
+      <svg id="canvas" xmlns="http://www.w3.org/2000/svg"></svg>
+      <div class="canvas-hint" id="canvasHint">Click empty space to add · drag points to move · scroll to zoom · shift-drag to pan · arrows nudge</div>
+      <div class="countdown" id="countdown" hidden></div>
+    </div>
+
+    <div class="statusbar">
+      <span id="statusText">Ready</span>
+      <span id="screenInfo" class="muted"></span>
+    </div>
+  </section>
+
+  <!-- ------------------------------------------------------- event table -->
+  <aside class="inspector">
+    <div class="panel-head">
+      <span>Clicks (<span id="clickCount">0</span>)</span>
+      <button id="btnAddRow" class="icon-btn" title="Append a click">+</button>
+    </div>
+
+    <div class="table-head">
+      <span class="col-idx">#</span>
+      <span class="col-num">X</span>
+      <span class="col-num">Y</span>
+      <span class="col-num">Delay ms</span>
+      <span class="col-act"></span>
+    </div>
+
+    <ul id="eventList" class="event-list"></ul>
+
+    <div class="inspector-foot">
+      <div class="total-row"><span>Total duration</span><strong id="totalDuration">0.0s</strong></div>
+      <div class="log-head">Activity</div>
+      <div id="log" class="log"></div>
+    </div>
+  </aside>
+
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>

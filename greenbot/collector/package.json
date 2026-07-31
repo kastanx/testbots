@@ -1,0 +1,9 @@
+{
+  "name": "greenbot-collector",
+  "version": "1.0.0",
+  "description": "Frame collector for the green-click vision bot",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  }
+}

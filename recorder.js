@@ -1,8 +1,9 @@
-const { spawn } = require('child_process');
 const { mouse, Point, Button } = require('@nut-tree-fork/nut-js');
 const fs = require('fs');
+const path = require('path');
 const readline = require('readline');
 const { ReplayHumanizer } = require('./humanizer');
+const { InputMonitor } = require('./input-monitor');
 
 let recording = false;
 let replaying = false;
@@ -10,11 +11,11 @@ let paused = false;
 let events = [];
 let startTime = 0;
 let replayIndex = 0;
-let swiftProcess = null;
+let monitorProcess = null;
 let playlist = []; // Array of recording objects to play
 let playlistMode = false;
 
-const RECORDINGS_FILE = 'recordings.json';
+const RECORDINGS_FILE = path.join(__dirname, 'recordings.json');
 
 console.log("Click Recorder CLI (Global Hotkeys)");
 console.log("------------------");
@@ -73,19 +74,33 @@ function saveRecordingToFile(name, events) {
     console.log(`Recording '${name}' saved!`);
 }
 
-function startSwiftMonitor() {
-    console.log("Spawning Swift input monitor...");
-    swiftProcess = spawn('./recorder');
-    
-    swiftProcess.stdout.on('data', async (data) => {
-        const lines = data.toString().split('\n');
-        for (const line of lines) {
-            const cmd = line.trim();
-            if (!cmd) continue;
-            
-            // Ignore Swift commands if we are asking for user input in terminal
+function startInputMonitor() {
+    console.log("Spawning global input monitor...");
+    monitorProcess = new InputMonitor();
+
+    monitorProcess.on('ready', () => {
+        console.log("System Ready. Global hotkeys active.");
+    });
+
+    monitorProcess.on('info', (line) => {
+        if (line.startsWith("WARNING")) console.warn(line);
+        else console.log(`Monitor: ${line}`);
+    });
+
+    monitorProcess.on('error', (message) => {
+        console.error("Input monitor error:", message);
+    });
+
+    monitorProcess.on('close', (code) => {
+        console.log(`Input monitor exited with code ${code}`);
+        process.exit(0);
+    });
+
+    monitorProcess.on('key', async (cmd) => {
+        {
+            // Ignore hotkeys if we are asking for user input in terminal
             if (isAskingForInput) return;
-            
+
             if (cmd === 'r') {
                 if (!recording && !replaying) {
                     console.log("Recording started... Press Space to record clicks.");
@@ -168,25 +183,24 @@ function startSwiftMonitor() {
                         }
                     }
                 }
-            } else if (cmd === 'READY') {
-                console.log("System Ready. Global hotkeys active.");
-            } else if (cmd.startsWith("WARNING")) {
-                console.warn(cmd);
-            } else {
-                console.log(`Swift: ${cmd}`);
             }
         }
     });
 
-    swiftProcess.stderr.on('data', (data) => {
-        console.error(`Swift Error: ${data}`);
-    });
-
-    swiftProcess.on('close', (code) => {
-        console.log(`Swift monitor exited with code ${code}`);
-        process.exit(0);
-    });
+    monitorProcess.start();
 }
+
+// The monitor is a detached child holding a system-wide keyboard watch; make
+// sure it dies with us instead of lingering after Ctrl+C.
+function stopInputMonitor() {
+    if (monitorProcess) monitorProcess.stop();
+}
+
+process.on('exit', stopInputMonitor);
+process.on('SIGINT', () => {
+    stopInputMonitor();
+    process.exit(0);
+});
 
 async function askSessionSetup() {
     const humanize = await askQuestion("Humanize replay? (y/n, default y): ");
@@ -403,4 +417,4 @@ async function executePlan(plan, totalCount, humanizer) {
     }
 }
 
-startSwiftMonitor();
+startInputMonitor();

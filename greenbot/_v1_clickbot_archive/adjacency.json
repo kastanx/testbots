@@ -1,0 +1,31 @@
+{
+  "_comment": [
+    "Which spots are reachable from which. Only consulted when",
+    "adjacency_enabled is true in config.json.",
+    "A zone change to a spot that is not reachable from the last confirmed spot",
+    "is rejected unless the vote is unanimous. transit is implicitly connected",
+    "to everything, so you never list it.",
+    "The template below is a ring (spot_01 -> spot_02 -> ... -> spot_01);",
+    "replace it with your world's real layout before enabling."
+  ],
+  "spot_01": ["spot_02", "spot_20"],
+  "spot_02": ["spot_01", "spot_03"],
+  "spot_03": ["spot_02", "spot_04"],
+  "spot_04": ["spot_03", "spot_05"],
+  "spot_05": ["spot_04", "spot_06"],
+  "spot_06": ["spot_05", "spot_07"],
+  "spot_07": ["spot_06", "spot_08"],
+  "spot_08": ["spot_07", "spot_09"],
+  "spot_09": ["spot_08", "spot_10"],
+  "spot_10": ["spot_09", "spot_11"],
+  "spot_11": ["spot_10", "spot_12"],
+  "spot_12": ["spot_11", "spot_13"],
+  "spot_13": ["spot_12", "spot_14"],
+  "spot_14": ["spot_13", "spot_15"],
+  "spot_15": ["spot_14", "spot_16"],
+  "spot_16": ["spot_15", "spot_17"],
+  "spot_17": ["spot_16", "spot_18"],
+  "spot_18": ["spot_17", "spot_19"],
+  "spot_19": ["spot_18", "spot_20"],
+  "spot_20": ["spot_19", "spot_01"]
+}

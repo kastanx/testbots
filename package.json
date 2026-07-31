@@ -4,10 +4,16 @@
   "description": "A CLI tool to record and replay mouse clicks",
   "main": "recorder.js",
   "scripts": {
-    "start": "node recorder.js"
+    "start": "electron electron/main.js",
+    "app": "electron electron/main.js",
+    "cli": "node recorder.js",
+    "color": "node get-color.js",
+    "test-hook": "node test_hook.js"
   },
   "dependencies": {
-    "@nut-tree-fork/nut-js": "*",
-    "robotjs": "^0.6.0"
+    "@nut-tree-fork/nut-js": "*"
+  },
+  "devDependencies": {
+    "electron": "^43.2.0"
   }
 }

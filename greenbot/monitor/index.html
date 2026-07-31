@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self' file:; script-src 'self' file:; style-src 'self' file: 'unsafe-inline'; img-src 'self' file: blob: data:;" />
+    <title>Greenbot Monitor</title>
+    <style>
+        :root {
+            --bg: #10131a;
+            --panel: #181d27;
+            --line: #262d3b;
+            --text: #e6e9f0;
+            --muted: #8a93a6;
+            --ok: #46d17f;
+            --warn: #ffb648;
+            --bad: #ff5c5c;
+            --aim: #ffd83d;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 10px;
+            font: 13px/1.45 "Segoe UI", system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            user-select: none;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            gap: 8px;
+        }
+
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 9px 11px;
+        }
+
+        .row { display: flex; align-items: center; gap: 8px; }
+        .spacer { flex: 1; }
+        .muted { color: var(--muted); }
+        .small { font-size: 11px; }
+
+        #loc {
+            font-size: 27px;
+            font-weight: 650;
+            letter-spacing: .3px;
+            line-height: 1.1;
+        }
+
+        #loc.transit { color: var(--warn); }
+        #loc.unknown { color: var(--muted); }
+
+        #conf {
+            font-variant-numeric: tabular-nums;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 99px;
+            border: 1px solid var(--line);
+            font-size: 12px;
+        }
+
+        #conf.high { color: var(--ok); border-color: var(--ok); }
+        #conf.low { color: var(--warn); border-color: var(--warn); }
+
+        /* Sized by the capture's aspect ratio, not stretched: an ultrawide frame
+           in a narrow panel is short, and padding it out just adds dead space. */
+        #preview { padding: 8px; }
+
+        #wrap {
+            position: relative;
+            line-height: 0;
+            width: 100%;
+        }
+
+        #shot {
+            width: 100%;
+            display: block;
+            border-radius: 6px;
+            background: #05070b;
+        }
+
+        #click {
+            font-size: 21px;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            color: var(--aim);
+            line-height: 1.15;
+        }
+
+        #click.none { color: var(--muted); font-size: 15px; font-weight: 500; }
+
+        #bars { display: flex; flex-direction: column; gap: 3px; }
+
+        .bar {
+            display: grid;
+            grid-template-columns: 62px 1fr 42px;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+        }
+
+        .bar .track { height: 5px; background: #121722; border-radius: 3px; overflow: hidden; }
+        .bar .fill { height: 100%; background: var(--muted); }
+        .bar:first-child .fill { background: var(--ok); }
+        .bar .val { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+
+        #status { border-color: transparent; padding: 6px 11px; }
+        #status.down { border-color: var(--bad); background: rgba(255, 92, 92, .1); }
+        #dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+        #dot.live { background: var(--ok); }
+        #dot.down { background: var(--bad); }
+
+        input[type=range] { width: 92px; accent-color: #46d17f; }
+    </style>
+</head>
+
+<body>
+    <div class="panel">
+        <div class="row">
+            <div id="loc" class="unknown">—</div>
+            <div class="spacer"></div>
+            <div id="conf">—</div>
+        </div>
+        <div id="bars" style="margin-top:7px"></div>
+    </div>
+
+    <div class="panel" id="preview">
+        <div id="wrap"><img id="shot" alt="" /></div>
+    </div>
+
+    <div class="panel">
+        <div class="small muted">CLICK AT</div>
+        <div id="click" class="none">nothing to click</div>
+        <div id="boxinfo" class="small muted" style="margin-top:2px">—</div>
+    </div>
+
+    <div class="spacer"></div>
+
+    <div class="panel small" id="status">
+        <div class="row">
+            <span id="dot"></span>
+            <span id="statustext">connecting…</span>
+            <div class="spacer"></div>
+            <span id="rate" class="muted"></span>
+        </div>
+        <div class="row" style="margin-top:6px">
+            <span class="muted">poll</span>
+            <input id="hz" type="range" min="1" max="8" step="1" value="3" />
+            <span id="hzval" class="muted">3 Hz</span>
+            <div class="spacer"></div>
+            <span id="timing" class="muted"></span>
+        </div>
+    </div>
+
+    <script src="renderer.js"></script>
+</body>
+
+</html>

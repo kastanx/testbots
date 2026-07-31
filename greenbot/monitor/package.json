@@ -1,0 +1,9 @@
+{
+  "name": "greenbot-monitor",
+  "version": "1.0.0",
+  "description": "Always-on-top panel showing what the inference service says to click",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  }
+}

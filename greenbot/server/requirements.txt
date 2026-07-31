@@ -1,0 +1,8 @@
+# torch/torchvision are NOT listed here on purpose: they must come from the
+# CUDA index first, or pip resolves the CPU build. See setup.ps1.
+fastapi
+uvicorn[standard]
+ultralytics
+opencv-python
+python-multipart
+pyyaml

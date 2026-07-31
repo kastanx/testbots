@@ -1,0 +1,14 @@
+{
+  "name": "greenbot",
+  "version": "1.0.0",
+  "description": "Frame collector for the green-click vision bot",
+  "private": true,
+  "scripts": {
+    "start": "electron collector",
+    "collect": "electron collector",
+    "monitor": "electron monitor"
+  },
+  "devDependencies": {
+    "electron": "^43.2.0"
+  }
+}

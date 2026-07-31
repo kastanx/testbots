@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <!-- file: is spelled out because 'self' does not match a file:// origin. -->
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self' file:; script-src 'self' file:; style-src 'self' file: 'unsafe-inline'; media-src 'self' file: blob:; img-src 'self' file: blob: data:;" />
+    <title>Frame Collector</title>
+    <style>
+        :root {
+            --bg: #10131a;
+            --panel: #181d27;
+            --line: #262d3b;
+            --text: #e6e9f0;
+            --muted: #8a93a6;
+            --rec: #ff4a4a;
+            --ok: #46d17f;
+            --warn: #ffb648;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 12px;
+            font: 13px/1.45 "Segoe UI", system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            user-select: none;
+        }
+
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        .row { display: flex; align-items: center; gap: 8px; }
+        .muted { color: var(--muted); }
+        .small { font-size: 11px; }
+
+        select, button {
+            font: inherit;
+            background: #212836;
+            color: var(--text);
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            padding: 6px 10px;
+        }
+
+        select { flex: 1; min-width: 0; }
+        button { cursor: pointer; }
+        button:hover { border-color: #3a4356; }
+        button:disabled { opacity: .5; cursor: default; }
+
+        #label {
+            font-size: 26px;
+            font-weight: 600;
+            letter-spacing: .5px;
+        }
+
+        #rec {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 600;
+            font-size: 12px;
+            padding: 3px 9px;
+            border-radius: 99px;
+            border: 1px solid var(--line);
+            color: var(--muted);
+        }
+
+        #rec.on {
+            color: var(--rec);
+            border-color: var(--rec);
+            background: rgba(255, 74, 74, .12);
+        }
+
+        #rec .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        #rec.on .dot { animation: blink 1s steps(2, start) infinite; }
+
+        @keyframes blink { 50% { opacity: 0; } }
+
+        #counts {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 3px;
+            max-height: 190px;
+            overflow-y: auto;
+        }
+
+        .cell {
+            display: flex;
+            justify-content: space-between;
+            gap: 4px;
+            padding: 3px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            background: #141924;
+            border: 1px solid transparent;
+        }
+
+        .cell.active { border-color: var(--ok); color: var(--ok); }
+        .cell.empty .n { color: #5a6072; }
+        .cell .n { font-variant-numeric: tabular-nums; }
+
+        #preview {
+            width: 100%;
+            border-radius: 6px;
+            background: #000;
+            display: block;
+            aspect-ratio: 16 / 9;
+            object-fit: contain;
+        }
+
+        .warn { color: var(--warn); }
+        .ok { color: var(--ok); }
+
+        /* --------------------------------------------------------- modes */
+
+        .tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+
+        .tab {
+            flex: 1;
+            padding: 5px 10px;
+            font-size: 12px;
+            background: #141924;
+            color: var(--muted);
+        }
+
+        .tab.on { color: var(--text); border-color: var(--ok); background: #1b2432; }
+
+        #capturemode, #labelmode { display: none; }
+        body.mode-capture #capturemode { display: block; }
+
+        body.mode-label {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            padding: 8px;
+        }
+
+        body.mode-label #labelmode {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .lbar, .lfoot {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            padding: 8px 10px;
+        }
+
+        .spacer { flex: 1; }
+
+        #lb-progress {
+            font-size: 16px;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+        }
+
+        #lb-dir, #lb-file {
+            max-width: 46%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            direction: rtl;
+            text-align: left;
+        }
+
+        #lb-canvaswrap {
+            flex: 1;
+            min-height: 0;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            overflow: hidden;
+            background: #0b0e14;
+        }
+
+        #lb-canvas { display: block; width: 100%; height: 100%; cursor: crosshair; }
+
+        #lb-dirty { font-weight: 600; }
+
+        .lfoot { margin-top: 10px; margin-bottom: 0; }
+
+        kbd {
+            background: #212836;
+            border: 1px solid var(--line);
+            border-bottom-width: 2px;
+            border-radius: 4px;
+            padding: 0 5px;
+            font: inherit;
+            font-size: 11px;
+        }
+    </style>
+</head>
+
+<body class="mode-capture">
+    <div class="tabs">
+        <button id="mode-capture" class="tab on">Capture frames</button>
+        <button id="mode-label" class="tab">Label boxes</button>
+    </div>
+
+    <div id="capturemode">
+    <div class="panel">
+        <div class="row">
+            <select id="sources"></select>
+            <button id="start">Start</button>
+        </div>
+        <div class="row small muted" style="margin-top:8px">
+            <span id="capinfo">no capture</span>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="row" style="justify-content:space-between">
+            <div id="label">—</div>
+            <div id="rec"><span class="dot"></span><span id="rectext">IDLE</span></div>
+        </div>
+        <div class="small muted" style="margin-top:4px">
+            <span id="session">—</span> · <span id="total">0</span> frames
+        </div>
+    </div>
+
+    <div class="panel">
+        <div id="counts"></div>
+    </div>
+
+    <div class="panel">
+        <video id="preview" autoplay muted playsinline></video>
+    </div>
+
+    <div class="panel small">
+        <div class="row" style="justify-content:space-between">
+            <span id="hotkeys">—</span>
+            <button id="open" style="padding:3px 8px;font-size:11px">Open folder</button>
+        </div>
+        <div class="muted" style="margin-top:6px" id="keys">—</div>
+    </div>
+    </div><!-- /capturemode -->
+
+    <div id="labelmode">
+        <div class="panel lbar">
+            <button id="lb-open">Open folder…</button>
+            <span id="lb-dir" class="muted small">no folder</span>
+            <span class="spacer"></span>
+            <span class="small muted">0-box <b id="lb-zero">0</b> · no .txt <b id="lb-unlabeled">0</b></span>
+            <span id="lb-progress">— / —</span>
+            <button id="lb-prev">◀ A</button>
+            <button id="lb-next">D ▶</button>
+            <button id="lb-save">Save S</button>
+        </div>
+
+        <div id="lb-canvaswrap"><canvas id="lb-canvas"></canvas></div>
+
+        <div class="panel small lfoot">
+            <span id="lb-file" class="muted">—</span>
+            <span id="lb-boxes">0 boxes</span>
+            <span id="lb-dirty" class="warn"></span>
+            <span id="lb-msg" class="muted small"></span>
+            <span class="spacer"></span>
+            <span class="muted">
+                drag = new box · click = select · handles = resize · body = move ·
+                <kbd>Del</kbd> remove · <kbd>S</kbd> save + next · <kbd>A</kbd>/<kbd>D</kbd> prev/next
+            </span>
+        </div>
+    </div>
+
+    <script src="label.js"></script>
+    <script src="renderer.js"></script>
+</body>
+
+</html>
