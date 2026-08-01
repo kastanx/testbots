@@ -1,0 +1,106 @@
+{
+  "pollHz": 3,
+  "humanize": true,
+  "minClickIntervalMs": 1200,
+  "fallback": {
+    "enabled": true,
+    "afterEmptyPolls": 3,
+    "minConfidence": 0.9
+  },
+  "breaks": {
+    "short": {
+      "enabled": true,
+      "minPlayMs": 900000,
+      "maxPlayMs": 2100000,
+      "minIdleMs": 20000,
+      "maxIdleMs": 180000
+    },
+    "long": {
+      "enabled": true,
+      "minPlayMs": 7200000,
+      "maxPlayMs": 14400000,
+      "minIdleMs": 360000,
+      "maxIdleMs": 600000
+    }
+  },
+  "daily": {
+    "minPlayBeforeMs": 2700000,
+    "lunch": {
+      "enabled": true,
+      "at": "12:30",
+      "minMs": 1800000,
+      "maxMs": 3000000
+    },
+    "dinner": {
+      "enabled": true,
+      "at": "18:30",
+      "minMs": 2700000,
+      "maxMs": 4500000
+    },
+    "sleep": {
+      "enabled": true,
+      "at": "23:30",
+      "minMs": 21600000,
+      "maxMs": 28800000
+    }
+  },
+  "autoRepair": {
+    "enabled": true,
+    "maxCyclesPerHour": 6,
+    "globalMaxCycles": 0,
+    "claudeTimeoutMs": 600000,
+    "verifyPlayableMs": 90000,
+    "verifyHealthyMs": 180000,
+    "minConfidence": 0.7,
+    "consecutivePolls": 3,
+    "pollMs": 3000
+  },
+  "watchdog": {
+    "sameLocationMs": 300000,
+    "maxClicksWithoutLocationChange": 6,
+    "maxClicksPerRun": 0,
+    "maxRunMs": 0
+  },
+  "locations": {
+    "spot_01": {
+      "mode": "target",
+      "delayMs": 6630,
+      "enabled": true
+    },
+    "spot_02": {
+      "mode": "target",
+      "delayMs": 9546,
+      "enabled": true
+    },
+    "spot_03": {
+      "mode": "target",
+      "delayMs": 11610,
+      "enabled": true
+    },
+    "spot_04": {
+      "mode": "target",
+      "delayMs": 6069,
+      "enabled": true
+    },
+    "spot_05": {
+      "mode": "target",
+      "delayMs": 11332,
+      "enabled": true
+    },
+    "spot_06": {
+      "mode": "target",
+      "delayMs": 7045,
+      "enabled": true
+    },
+    "transit": {
+      "mode": "fixed",
+      "point": {
+        "x": 665,
+        "y": 699
+      },
+      "delayMs": 12334,
+      "humanize": false,
+      "enabled": true
+    }
+  }
+}

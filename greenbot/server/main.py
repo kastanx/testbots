@@ -217,6 +217,28 @@ def grab_screen(monitor):
     return frame
 
 
+def fallback_point(location_id, screen_w, screen_h, cfg):
+    """Where this location's target usually sits, even when nothing is detected.
+
+    The green markers reset at random and only come back once an obstacle is
+    completed, so a consumer that only ever waits deadlocks. A `nearest_point`
+    rule already carries the median position of the box the human clicked across
+    every labelled frame, so it doubles as a last-known-good coordinate.
+
+    Reported, never acted on: the service does not decide when it is safe to use
+    this. It is null unless the rule actually carries a point.
+    """
+    rule = (cfg.get("targets") or {}).get(location_id)
+    if not rule or rule.get("pick") != "nearest_point":
+        return None
+    point = rule.get("point")
+    if not (isinstance(point, (list, tuple)) and len(point) == 2):
+        return None
+    return {"cx": int(round(float(point[0]) * screen_w)),
+            "cy": int(round(float(point[1]) * screen_h)),
+            "source": f"targets.{location_id}.point"}
+
+
 def select_target(clickables, location_id, shape, cfg):
     """The one box that matters here, or None if no rule applies.
 
@@ -413,6 +435,7 @@ async def analyze_screen(preview: int = 0):
                             "confidence": top3[0]["confidence"],
                             "top3": top3},
                "target": target,
+               "fallback": fallback_point(top3[0]["id"], screen_w, screen_h, cfg),
                "clickables": clickables,
                "image": {"width": int(screen_w), "height": int(screen_h)},
                "capture": {"monitor": int(cap.get("monitor", 0)),

@@ -1,0 +1,22 @@
+{
+    "name": "greenbot-dashboard",
+    "version": "1.0.0",
+    "private": true,
+    "type": "module",
+    "description": "Status page and remote control for the greenbot clicker. Deployed to Vercel; the local panel pushes to it and collects commands from it.",
+    "scripts": {
+        "dev": "next dev",
+        "build": "next build",
+        "start": "next start",
+        "test": "node selftest.mjs && node sqltest.mjs"
+    },
+    "dependencies": {
+        "@neondatabase/serverless": "^1.0.2",
+        "next": "^16.2.12",
+        "react": "^19.2.0",
+        "react-dom": "^19.2.0"
+    },
+    "devDependencies": {
+        "@electric-sql/pglite": "^0.5.4"
+    }
+}

@@ -45,6 +45,33 @@
         .spacer { flex: 1; }
         .muted { color: var(--muted); }
         .small { font-size: 11px; }
+        .hidden { display: none !important; }
+
+        #tabs { display: flex; gap: 4px; flex: 0 0 auto; }
+
+        .tab {
+            flex: 1;
+            padding: 7px 0;
+            font: inherit;
+            font-weight: 600;
+            letter-spacing: .4px;
+            color: var(--muted);
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .tab.active { color: var(--text); border-color: #46527a; background: #1f2635; }
+
+        .view { display: none; flex-direction: column; gap: 8px; flex: 1; min-height: 0; }
+        .view.active { display: flex; }
+        #view-run { overflow-y: auto; }
+        #view-run > .panel { flex: 0 0 auto; }
+
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-thumb { background: #2c3446; border-radius: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
 
         #loc {
             font-size: 27px;
@@ -117,48 +144,326 @@
         #dot.down { background: var(--bad); }
 
         input[type=range] { width: 92px; accent-color: #46d17f; }
+
+        /* ---- run tab ---- */
+
+        button { font: inherit; cursor: pointer; }
+        button:disabled { cursor: not-allowed; opacity: .45; }
+
+        #runbtn {
+            flex: 1;
+            padding: 13px 0;
+            font-size: 17px;
+            font-weight: 700;
+            letter-spacing: 1.2px;
+            color: #08130c;
+            background: var(--ok);
+            border: 0;
+            border-radius: 8px;
+        }
+
+        #runbtn.stop { background: var(--bad); color: #1a0606; }
+        #runbtn.armed { box-shadow: 0 0 0 2px rgba(255, 92, 92, .35); }
+
+        .mode {
+            padding: 9px 12px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: .6px;
+            color: var(--muted);
+            background: #121722;
+            border: 1px solid var(--line);
+            cursor: pointer;
+        }
+
+        #modedry { border-radius: 8px 0 0 8px; border-right: 0; }
+        #modelive { border-radius: 0 8px 8px 0; }
+        #modedry.on { color: #08130c; background: var(--ok); border-color: var(--ok); }
+        #modelive.on { color: #1a0606; background: var(--bad); border-color: var(--bad); }
+
+        #confirm {
+            margin-top: 8px;
+            padding: 8px 9px;
+            border: 1px solid var(--bad);
+            border-radius: 7px;
+            background: rgba(255, 92, 92, .09);
+        }
+
+        #confirm button { padding: 5px 10px; border-radius: 6px; border: 1px solid var(--line); background: #121722; color: var(--text); font-size: 11px; }
+        #confirm #confirmyes { background: var(--bad); border-color: var(--bad); color: #1a0606; font-weight: 700; }
+
+        .mini {
+            padding: 3px 8px;
+            font-size: 11px;
+            color: var(--muted);
+            background: #121722;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+        }
+
+        .mini:hover:not(:disabled) { color: var(--text); }
+
+        .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+        .stat { font-size: 15px; font-weight: 650; line-height: 1.25; }
+        .stat.num { font-variant-numeric: tabular-nums; }
+        .stat.waiting { color: var(--warn); }
+        .stat.clicking { color: var(--aim); }
+        .stat.polling { color: var(--ok); }
+        .stat.stopped, .stat.paused { color: var(--muted); }
+
+        #countdown { height: 5px; background: #121722; border-radius: 3px; overflow: hidden; margin-top: 4px; }
+        #countfill { height: 100%; width: 0; background: var(--warn); }
+
+        /* Repair chatter is verbose; dim it so the click log stays readable. */
+        .line.claude .k { color: #7aa2f7; }
+        .line.claude .m { color: #9aa5bd; }
+
+        .logpanel { display: flex; flex-direction: column; gap: 5px; }
+
+        #log {
+            height: 150px;
+            overflow-y: auto;
+            font: 11px/1.5 Consolas, "Cascadia Mono", monospace;
+            user-select: text;
+        }
+
+        #log .line { display: flex; gap: 6px; white-space: pre-wrap; word-break: break-word; }
+        #log .t { color: #5e677d; flex: 0 0 auto; }
+        #log .k { flex: 0 0 40px; text-transform: uppercase; letter-spacing: .3px; }
+        #log .line.click .k { color: var(--aim); }
+        #log .line.dry .k { color: var(--muted); }
+        #log .line.wait .k { color: var(--warn); }
+        #log .line.warn .k, #log .line.warn .m { color: var(--bad); }
+        #log .line.run .k { color: var(--ok); }
+        #log .line.stop .k { color: var(--bad); }
+
+        #rows { display: flex; flex-direction: column; gap: 3px; margin-top: 6px; }
+
+        .trow {
+            display: grid;
+            grid-template-columns: 18px 1fr 46px 74px 50px;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+        }
+
+        .trow.off .name, .trow.off .kind { color: var(--muted); text-decoration: line-through; }
+        .trow .kind { font-size: 10px; color: var(--muted); letter-spacing: .3px; }
+        .trow .sec { font-size: 11px; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+
+        .trow input[type=number] {
+            width: 100%;
+            padding: 3px 5px;
+            font: inherit;
+            font-variant-numeric: tabular-nums;
+            text-align: right;
+            color: var(--text);
+            background: #121722;
+            border: 1px solid var(--line);
+            border-radius: 5px;
+        }
+
+        .trow input[type=checkbox] { accent-color: #46d17f; }
+
+        #pickhint {
+            margin-top: 6px;
+            padding: 7px 9px;
+            border: 1px solid var(--aim);
+            border-radius: 7px;
+            background: rgba(255, 216, 61, .09);
+            color: var(--aim);
+        }
+
+        kbd {
+            padding: 1px 5px;
+            font: inherit;
+            font-weight: 700;
+            border: 1px solid currentColor;
+            border-radius: 4px;
+        }
     </style>
 </head>
 
 <body>
-    <div class="panel">
-        <div class="row">
-            <div id="loc" class="unknown">—</div>
-            <div class="spacer"></div>
-            <div id="conf">—</div>
+    <div id="tabs">
+        <button class="tab active" data-view="monitor">Monitor</button>
+        <button class="tab" data-view="run">Run</button>
+    </div>
+
+    <div id="view-monitor" class="view active">
+        <div class="panel">
+            <div class="row">
+                <div id="loc" class="unknown">—</div>
+                <div class="spacer"></div>
+                <div id="conf">—</div>
+            </div>
+            <div id="bars" style="margin-top:7px"></div>
         </div>
-        <div id="bars" style="margin-top:7px"></div>
-    </div>
 
-    <div class="panel" id="preview">
-        <div id="wrap"><img id="shot" alt="" /></div>
-    </div>
-
-    <div class="panel">
-        <div class="small muted">CLICK AT</div>
-        <div id="click" class="none">nothing to click</div>
-        <div id="boxinfo" class="small muted" style="margin-top:2px">—</div>
-    </div>
-
-    <div class="spacer"></div>
-
-    <div class="panel small" id="status">
-        <div class="row">
-            <span id="dot"></span>
-            <span id="statustext">connecting…</span>
-            <div class="spacer"></div>
-            <span id="rate" class="muted"></span>
+        <div class="panel" id="preview">
+            <div id="wrap"><img id="shot" alt="" /></div>
         </div>
-        <div class="row" style="margin-top:6px">
-            <span class="muted">poll</span>
-            <input id="hz" type="range" min="1" max="8" step="1" value="3" />
-            <span id="hzval" class="muted">3 Hz</span>
-            <div class="spacer"></div>
-            <span id="timing" class="muted"></span>
+
+        <div class="panel">
+            <div class="small muted">CLICK AT</div>
+            <div id="click" class="none">nothing to click</div>
+            <div id="boxinfo" class="small muted" style="margin-top:2px">—</div>
+        </div>
+
+        <div class="spacer"></div>
+
+        <div class="panel small" id="status">
+            <div class="row">
+                <span id="dot"></span>
+                <span id="statustext">connecting…</span>
+                <div class="spacer"></div>
+                <span id="rate" class="muted"></span>
+            </div>
+            <div class="row" style="margin-top:6px">
+                <span class="muted">poll</span>
+                <input id="hz" type="range" min="1" max="8" step="1" value="3" />
+                <span id="hzval" class="muted">3 Hz</span>
+                <div class="spacer"></div>
+                <span id="timing" class="muted"></span>
+            </div>
+            <div class="row" style="margin-top:6px">
+                <button id="capvis" class="mini"
+                    title="Protected keeps this panel out of the frames the service analyses. Turn it off to see the panel over Remote Desktop.">—</button>
+                <span id="capvishint" class="muted" style="font-size:10px"></span>
+            </div>
+        </div>
+    </div>
+
+    <div id="view-run" class="view">
+        <div class="panel">
+            <div class="row">
+                <button id="runbtn">START</button>
+                <div class="row" style="gap:0">
+                    <button id="modedry" class="mode on">DRY RUN</button>
+                    <button id="modelive" class="mode">LIVE</button>
+                </div>
+            </div>
+
+            <div id="confirm" class="hidden">
+                <div class="small">LIVE moves the real mouse and clicks it. <kbd>F10</kbd> stops the run at any time.</div>
+                <div class="row" style="margin-top:7px">
+                    <button id="confirmyes">Yes, click for real</button>
+                    <button id="confirmno">Cancel</button>
+                </div>
+            </div>
+
+            <div id="runhint" class="small muted" style="margin-top:7px">dry run — decisions are logged, nothing is clicked</div>
+        </div>
+
+        <div class="panel">
+            <div class="stats">
+                <div>
+                    <div class="small muted">PHASE</div>
+                    <div id="rphase" class="stat stopped">stopped</div>
+                </div>
+                <div>
+                    <div class="small muted">LOCATION</div>
+                    <div id="rloc" class="stat">—</div>
+                </div>
+                <div>
+                    <div class="small muted">CLICKS</div>
+                    <div id="rclicks" class="stat num">0</div>
+                </div>
+                <div>
+                    <div class="small muted">ELAPSED</div>
+                    <div id="relapsed" class="stat num">0:00</div>
+                </div>
+            </div>
+            <div class="row small" style="margin-top:8px">
+                <span class="muted">next click in</span>
+                <div class="spacer"></div>
+                <span id="rcount" class="muted">—</span>
+            </div>
+            <div id="countdown"><div id="countfill"></div></div>
+        </div>
+
+        <div class="panel">
+            <div class="row small muted">
+                <span>WATCHDOGS</span>
+                <div class="spacer"></div>
+                <span class="small muted">0 = no limit</span>
+            </div>
+            <div id="wdrows" style="margin-top:6px"></div>
+        </div>
+
+        <div class="panel">
+            <div class="row small muted">
+                <span>BREAKS</span>
+                <div class="spacer"></div>
+                <span class="small muted">never starts on transit</span>
+            </div>
+            <div id="brkrows" style="margin-top:6px"></div>
+            <div id="brknote" class="small muted" style="margin-top:5px"></div>
+        </div>
+
+        <div class="panel">
+            <div class="row small muted">
+                <span>DAILY ROUTINE</span>
+                <div class="spacer"></div>
+                <span class="small muted">local time, drifts every day</span>
+            </div>
+            <div id="dayrows" style="margin-top:6px"></div>
+            <div class="row small" style="margin-top:6px">
+                <span class="muted">skip anything starting within</span>
+                <input type="number" id="daygrace" class="wdms" min="0" step="15" value="45" />
+                <span class="muted">min of START</span>
+            </div>
+            <div id="daynote" class="small muted" style="margin-top:5px"></div>
+        </div>
+
+        <div class="panel">
+            <div class="row">
+                <button id="autobtn" class="mini">auto-repair: OFF</button>
+                <button id="autotest" class="mini">test repair now</button>
+                <button id="autoabort" class="mini hidden">cancel</button>
+                <span id="autostage" class="small muted">idle</span>
+                <div class="spacer"></div>
+                <span id="autocycles" class="small muted"></span>
+            </div>
+            <div id="telnote" class="small muted" style="margin-top:5px"></div>
+            <div id="autonote" class="small muted" style="margin-top:5px">
+                When the harness stops on its own, hand it to Claude Code and resume
+                clicking if the game comes back. Restarts the clicker unattended.
+            </div>
+        </div>
+
+        <div class="panel logpanel">
+            <div class="row small muted">
+                <span>EVENT LOG</span>
+                <div class="spacer"></div>
+                <button id="logclear" class="mini">clear</button>
+            </div>
+            <div id="log"></div>
+        </div>
+
+        <div class="panel">
+            <div class="row small muted"><span>TRANSIT CLICK POINT</span></div>
+            <div class="row" style="margin-top:5px">
+                <div id="pointval" class="stat num">not set</div>
+                <div class="spacer"></div>
+                <button id="pickbtn" class="mini">Set click point</button>
+            </div>
+            <div id="pickhint" class="small hidden"></div>
+        </div>
+
+        <div class="panel">
+            <div class="row small muted">
+                <span>TIMINGS — wait after clicking</span>
+                <div class="spacer"></div>
+                <button id="resettimings" class="mini">reset to recorded</button>
+            </div>
+            <div id="rows"></div>
+            <div id="timinghint" class="small muted" style="margin-top:6px">saved to route.json as you edit</div>
         </div>
     </div>
 
     <script src="renderer.js"></script>
+    <script src="run.js"></script>
 </body>
 
 </html>

@@ -11,6 +11,8 @@ const el = {
     dot: document.getElementById('dot'),
     rate: document.getElementById('rate'),
     timing: document.getElementById('timing'),
+    capvis: document.getElementById('capvis'),
+    capvishint: document.getElementById('capvishint'),
     hz: document.getElementById('hz'),
     hzval: document.getElementById('hzval')
 };
@@ -33,6 +35,18 @@ let lastError = null;
 // the selftest chasing the wrong problem once already.
 function diag(extra) {
     window.__diag = Object.assign({ ticks, errors, rendered, lastError }, extra);
+}
+
+let protectedNow = true;
+
+function renderCapVis(on) {
+    protectedNow = Boolean(on);
+    el.capvis.textContent = protectedNow ? 'hidden from capture' : 'VISIBLE in capture';
+    el.capvis.style.color = protectedNow ? '' : 'var(--warn)';
+    el.capvis.style.borderColor = protectedNow ? '' : 'var(--warn)';
+    el.capvishint.textContent = protectedNow
+        ? 'invisible to Remote Desktop — click to show'
+        : 'appears in the frames the service analyses';
 }
 
 function setStatus(live, text) {
@@ -153,6 +167,11 @@ function onTick(tick) {
     el.hz.value = String(Math.round(config.hz));
     el.hzval.textContent = `${Math.round(config.hz)} Hz`;
     el.boxinfo.textContent = config.url;
+
+    renderCapVis(config.contentProtected);
+    el.capvis.addEventListener('click', async () => {
+        renderCapVis(await window.api.setContentProtection(!protectedNow));
+    });
 
     el.hz.addEventListener('input', async () => {
         const applied = await window.api.setHz(Number(el.hz.value));

@@ -625,7 +625,14 @@ if (!app.requestSingleInstanceLock()) {
         // own label, which is exactly what a classifier will learn instead of
         // the scene. WDA_EXCLUDEFROMCAPTURE keeps it visible to you and invisible
         // to the capture.
-        win.setContentProtection(process.env.GREENBOT_NO_CONTENT_PROTECTION !== '1');
+        // WDA_EXCLUDEFROMCAPTURE also hides it from Remote Desktop, so
+        // --visible-in-capture exists for when you are driving this remotely.
+        // Only use it while NOT recording: the window would land in the frames.
+        const hide = !process.argv.includes('--visible-in-capture')
+            && process.env.GREENBOT_NO_CONTENT_PROTECTION !== '1';
+        win.setContentProtection(hide);
+        if (!hide) console.log('[collector] content protection OFF - this window WILL '
+            + 'appear in captured frames; do not record like this');
 
         // The app is launched from a terminal, so surface renderer errors there
         // instead of hiding them in devtools. Electron moved this event to a

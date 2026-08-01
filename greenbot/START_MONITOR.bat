@@ -6,6 +6,11 @@ set "HERE=%~dp0"
 set "PY=%HERE%.venv\Scripts\python.exe"
 set "ELECTRON=%HERE%..\node_modules\.bin\electron.cmd"
 
+rem Remote dashboard. Uncomment both and fill them in after deploying it; the
+rem token must match INGEST_TOKEN on Vercel. Left commented, nothing is sent.
+rem set "GREENBOT_DASH_URL=https://your-app.vercel.app"
+rem set "GREENBOT_DASH_TOKEN="
+
 if not exist "%PY%" (
     echo No virtualenv at %PY%
     echo Run setup.ps1 first.

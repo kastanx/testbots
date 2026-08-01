@@ -16,3 +16,13 @@ __pycache__/
 *.pt
 tools/pick_choices_out/
 tools/target_labels.json
+monitor/settings.json
+harness/status.json
+harness/control.json
+
+# Today's rolled meal/sleep plan - machine state, not config
+harness/daily.json
+dashboard/node_modules/
+dashboard/.next/
+dashboard/.vercel/
+dashboard/.env*
