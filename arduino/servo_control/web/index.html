@@ -1,0 +1,917 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Servo Control</title>
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #f3f4f6;
+    --surface: #ffffff;
+    --surface-2: #f1f3f6;
+    --border: #dde1e7;
+    --text: #171a20;
+    --muted: #616875;
+    --accent: #2563eb;
+    --accent-text: #ffffff;
+    --accent-soft: #d6e2fc;
+    --track: #e4e7ec;
+    --ok: #15803d;
+    --ok-soft: #dcf5e4;
+    --warn: #b45309;
+    --warn-soft: #fdf0d8;
+    --danger: #dc2626;
+    --danger-strong: #b91c1c;
+    --danger-soft: #fde2e2;
+    --shadow: 0 1px 2px rgba(16, 24, 40, .05), 0 1px 3px rgba(16, 24, 40, .07);
+    --radius: 12px;
+    --mono: ui-monospace, "Cascadia Mono", Consolas, "SFMono-Regular", Menlo, monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0e1014;
+      --surface: #171a20;
+      --surface-2: #1f232b;
+      --border: #2b303a;
+      --text: #e8eaef;
+      --muted: #9aa2b1;
+      --accent: #5b8cff;
+      --accent-text: #0b1020;
+      --accent-soft: #22325a;
+      --track: #2a2f39;
+      --ok: #4ade80;
+      --ok-soft: #173424;
+      --warn: #fbbf24;
+      --warn-soft: #3a2e12;
+      --danger: #ef4444;
+      --danger-strong: #f87171;
+      --danger-soft: #3d1a1a;
+      --shadow: none;
+      color-scheme: dark;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 20px 16px 40px; }
+
+  header.top {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+    gap: 12px 20px; margin-bottom: 16px;
+  }
+  h1 { font-size: 20px; margin: 0; letter-spacing: -.01em; }
+  .sub { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+  .conn { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 12px;
+    border: 1px solid var(--border); border-radius: 999px; background: var(--surface);
+    font-size: 13px; font-weight: 600; white-space: nowrap;
+  }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); }
+  .pill.ok .dot { background: var(--ok); box-shadow: 0 0 0 3px var(--ok-soft); }
+  .pill.bad .dot { background: var(--danger); box-shadow: 0 0 0 3px var(--danger-soft); }
+
+  .banner {
+    margin: 0 0 16px; padding: 10px 14px; border-radius: var(--radius);
+    background: var(--warn-soft); color: var(--text); border: 1px solid var(--border); font-size: 14px;
+  }
+  .banner.err { background: var(--danger-soft); }
+
+  .grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+  .col { display: grid; gap: 16px; min-width: 0; }
+  @media (max-width: 880px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 16px; box-shadow: var(--shadow); min-width: 0;
+  }
+  .card h2 {
+    margin: 0 0 12px; font-size: 12px; font-weight: 700; letter-spacing: .07em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .card h2 .who { color: var(--accent); }
+  .card-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+  .card-head h2 { margin: 0; }
+  .sep { border: 0; border-top: 1px solid var(--border); margin: 14px 0; }
+  .hint { color: var(--muted); font-size: 12.5px; margin: 6px 0 0; }
+  fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+  fieldset:disabled { opacity: .5; }
+
+  .row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px; }
+  .row + .row, .row + .hint + .row { margin-top: 10px; }
+  .field { display: grid; gap: 4px; flex: 1 1 88px; min-width: 0; font-size: 12px; color: var(--muted); font-weight: 600; }
+  .field.narrow { flex: 0 1 96px; }
+
+  input[type=number], input[type=text], select {
+    width: 100%; height: 36px; padding: 0 10px; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
+    font: inherit; font-variant-numeric: tabular-nums; min-width: 0;
+  }
+  select { width: auto; max-width: 260px; }
+  input:focus-visible, select:focus-visible, button:focus-visible, .dial-card:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+  }
+
+  button {
+    height: 36px; padding: 0 14px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--surface-2); color: var(--text); font: inherit; font-weight: 600;
+    cursor: pointer; white-space: nowrap;
+  }
+  button:hover:not(:disabled) { border-color: var(--muted); }
+  button:disabled { cursor: default; opacity: .55; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+  button.primary:hover:not(:disabled) { filter: brightness(1.08); border-color: var(--accent); }
+  button.grow { flex: 1 1 0; }
+  .stop {
+    height: 48px; border: 0; border-radius: 10px; background: var(--danger); color: #fff;
+    font-size: 17px; font-weight: 800; letter-spacing: .1em; flex: 1 1 200px;
+  }
+  .stop:hover:not(:disabled) { background: var(--danger-strong); }
+  .stop kbd {
+    font-size: 11px; letter-spacing: 0; margin-left: 10px; vertical-align: 2px;
+    color: #fff; background: rgba(255, 255, 255, .18); border-color: rgba(255, 255, 255, .45);
+  }
+
+  .seg { display: flex; flex: 1 1 100%; }
+  .seg button { flex: 1 1 0; border-radius: 0; margin-left: -1px; }
+  .seg button:first-child { border-radius: 8px 0 0 8px; margin-left: 0; }
+  .seg button:last-child { border-radius: 0 8px 8px 0; }
+
+  /* Which servo the controls act on */
+  .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 16px; }
+  .bar-label { font-size: 12px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+  .picker { display: flex; flex: 1 1 260px; }
+  .picker button { flex: 1 1 0; border-radius: 0; margin-left: -1px; height: 40px; }
+  .picker button:first-child { border-radius: 8px 0 0 8px; margin-left: 0; }
+  .picker button:last-child { border-radius: 0 8px 8px 0; }
+  .picker button.on { background: var(--accent); border-color: var(--accent); color: var(--accent-text); position: relative; }
+
+  .switch { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; cursor: pointer; user-select: none; }
+  .switch input { appearance: none; width: 36px; height: 20px; border-radius: 999px; background: var(--track);
+    border: 1px solid var(--border); position: relative; cursor: pointer; margin: 0; flex: none; transition: background .15s; }
+  .switch input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px;
+    border-radius: 50%; background: var(--surface); box-shadow: 0 1px 2px rgba(0,0,0,.3); transition: transform .15s; }
+  .switch input:checked { background: var(--accent); border-color: var(--accent); }
+  .switch input:checked::after { transform: translateX(16px); }
+  code { font-family: var(--mono); font-size: 12px; }
+
+  /* Dials */
+  .dials { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 16px; }
+  .dial-card { display: grid; gap: 6px; cursor: pointer; transition: border-color .15s, box-shadow .15s; }
+  .dial-card.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), var(--shadow); }
+  .dial-head { display: flex; justify-content: space-between; align-items: baseline; }
+  .dial-head b { font-size: 15px; }
+  .dial-head span { color: var(--muted); font-size: 12.5px; }
+  .dial { width: 100%; height: auto; display: block; max-height: 210px; }
+  .dial .track { fill: none; stroke: var(--track); stroke-width: 14; stroke-linecap: round; }
+  .dial .allowed { fill: none; stroke: var(--accent-soft); stroke-width: 14; stroke-linecap: round; }
+  .dial .tick { stroke: var(--muted); stroke-width: 1.5; }
+  .dial .tick.minor { stroke-width: 1; opacity: .5; }
+  .dial .label { fill: var(--muted); font: 600 9px system-ui, sans-serif; text-anchor: middle; dominant-baseline: middle; }
+  .dial .home { fill: var(--ok); }
+  .dial .needle { transform-origin: 130px 134px; transition: transform .12s linear; }
+  .dial .needle.target line { stroke: var(--text); stroke-width: 3; stroke-linecap: round; }
+  .dial .needle.pos line { stroke: var(--accent); stroke-width: 5; stroke-linecap: round; }
+  .dial .hub { fill: var(--accent); stroke: var(--surface); stroke-width: 3; }
+  .readout { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 8px 16px; }
+  .big { font-size: 40px; font-weight: 800; letter-spacing: -.02em; line-height: 1; font-variant-numeric: tabular-nums; }
+  .big .unit { font-size: 22px; color: var(--muted); font-weight: 700; margin-left: 2px; }
+  .meta { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; margin-top: 6px; }
+  .meta b { color: var(--text); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px; background: var(--surface-2); color: var(--muted); border: 1px solid var(--border); }
+  .chip.on { background: var(--accent-soft); color: var(--text); border-color: transparent; }
+  .chip.good { background: var(--ok-soft); color: var(--ok); border-color: transparent; }
+  .chip.warn { background: var(--warn-soft); color: var(--warn); border-color: transparent; }
+
+  input[type=range] { width: 100%; accent-color: var(--accent); margin: 4px 0 0; height: 28px; }
+  .scale { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .scale b { color: var(--text); font-size: 13px; }
+
+  /* Log */
+  .log-card { margin-top: 16px; }
+  .log { list-style: none; margin: 0; padding: 0; max-height: 340px; overflow: auto; font-family: var(--mono); font-size: 12.5px; }
+  .log li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 2px 12px; padding: 6px 2px; border-bottom: 1px solid var(--border); }
+  .log li:last-child { border-bottom: 0; }
+  .log time { color: var(--muted); }
+  .log .call { overflow-wrap: anywhere; }
+  .log .ms { color: var(--muted); text-align: right; }
+  .log .res { grid-column: 2 / 4; color: var(--muted); overflow-wrap: anywhere; white-space: pre-wrap; }
+  .log li.err .res { color: var(--danger); }
+  .log li.ok .res::before { content: "→ "; }
+  .log li.err .res::before { content: "✕ "; }
+  .log .empty { display: block; color: var(--muted); font-family: system-ui, sans-serif; padding: 8px 2px; border: 0; }
+
+  footer { margin-top: 14px; color: var(--muted); font-size: 12.5px; }
+  kbd { font-family: var(--mono); font-size: 11px; padding: 1px 5px; border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 4px; background: var(--surface); }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%) translateY(20px);
+    background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 10px;
+    font-size: 14px; font-weight: 600; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s;
+    max-width: calc(100% - 32px);
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Servo control</h1>
+      <p class="sub" id="subtitle">ServoCtl · every button calls <code>servo.js</code></p>
+    </div>
+    <div class="conn">
+      <span id="connPill" class="pill"><span class="dot"></span><span id="connText">Connecting…</span></span>
+      <select id="portSelect" aria-label="Serial port"></select>
+      <button id="connectBtn" type="button">Connect</button>
+    </div>
+  </header>
+
+  <div id="banner" class="banner" hidden></div>
+
+  <section class="dials" id="dials" aria-label="Servo positions"></section>
+
+  <fieldset class="card bar needs-conn">
+    <span class="bar-label">Controls move</span>
+    <div class="picker" id="picker" role="group" aria-label="Which servo the controls move"></div>
+    <button type="button" class="stop" id="stopBtn">STOP ALL<kbd>Space</kbd></button>
+  </fieldset>
+
+  <main class="grid">
+    <div class="col">
+      <fieldset class="card needs-conn">
+        <h2>Position · <span class="who"></span></h2>
+        <input type="range" id="slider" min="0" max="180" step="1" value="90" aria-label="Angle">
+        <div class="scale"><span id="sliderMin">0°</span><b id="sliderVal">90°</b><span id="sliderMax">180°</span></div>
+        <div class="row">
+          <div class="seg">
+            <button type="button" data-step="-10">−10°</button>
+            <button type="button" data-step="-1">−1°</button>
+            <button type="button" data-step="1">+1°</button>
+            <button type="button" data-step="10">+10°</button>
+          </div>
+        </div>
+        <div class="row">
+          <button type="button" class="grow" id="minBtn">Min</button>
+          <button type="button" class="grow" id="centerBtn">Center</button>
+          <button type="button" class="grow" id="homeBtn">Home</button>
+          <button type="button" class="grow" id="maxBtn">Max</button>
+        </div>
+        <form class="row" id="angleForm">
+          <label class="field">Angle (°)<input id="angleIn" type="number" step="any" inputmode="decimal" value="90"></label>
+          <button class="primary">Go <code>angle()</code></button>
+        </form>
+        <div class="row">
+          <button type="button" class="grow" id="relaxBtn">Relax (limp)</button>
+          <button type="button" class="grow" id="holdBtn">Hold</button>
+        </div>
+      </fieldset>
+
+      <fieldset class="card needs-conn needs-one" id="settingsCard">
+        <div class="card-head">
+          <h2>Settings · <span class="who"></span></h2>
+          <span id="savedNote" class="chip">–</span>
+        </div>
+        <p class="hint" id="oneHint" hidden>Pick one servo above to see and change its settings.</p>
+        <form class="row" id="speedForm">
+          <label class="field">Speed (°/s, 0 = max)<input id="speedIn" type="number" step="any" min="0" inputmode="decimal"></label>
+          <button>Set <code>speed()</code></button>
+        </form>
+        <div class="row">
+          <label class="switch"><input type="checkbox" id="easeToggle"> Smooth start/stop for move &amp; sweep <code>ease()</code></label>
+        </div>
+        <hr class="sep">
+        <form class="row" id="limitsForm">
+          <label class="field">Limit low (°)<input id="loIn" type="number" step="any" inputmode="decimal"></label>
+          <label class="field">Limit high (°)<input id="hiIn" type="number" step="any" inputmode="decimal"></label>
+          <button>Set <code>limits()</code></button>
+          <button type="button" id="limitsOffBtn">Full range</button>
+        </form>
+        <form class="row" id="calForm">
+          <label class="field">0° pulse (µs)<input id="minUsIn" type="number" step="any" inputmode="numeric"></label>
+          <label class="field">Max pulse (µs)<input id="maxUsIn" type="number" step="any" inputmode="numeric"></label>
+          <label class="field narrow">Range (°)<input id="rangeIn" type="number" step="any" inputmode="decimal"></label>
+          <button>Set <code>calibrate()</code></button>
+        </form>
+        <form class="row" id="homeForm">
+          <label class="field">Home (°)<input id="homeIn" type="number" step="any" inputmode="decimal"></label>
+          <button>Set <code>setHome()</code></button>
+          <button type="button" id="homeHereBtn">Use current</button>
+        </form>
+        <hr class="sep">
+        <div class="row">
+          <button type="button" class="grow primary" id="saveBtn">Save to Arduino</button>
+          <button type="button" class="grow" id="loadBtn">Load saved</button>
+          <button type="button" class="grow" id="defaultsBtn">Factory defaults</button>
+        </div>
+        <p class="hint">Settings apply at once but are lost at power-off until saved. Each servo has its own.</p>
+      </fieldset>
+    </div>
+
+    <div class="col">
+      <fieldset class="card needs-conn">
+        <div class="card-head">
+          <h2>Motion · <span class="who"></span></h2>
+          <label class="switch" title="Resolve when the motion has finished instead of when it starts">
+            <input type="checkbox" id="waitToggle"> Await motion <code>{ wait: true }</code>
+          </label>
+        </div>
+        <p class="hint" style="margin: -4px 0 12px">Await on: a call returns when its motion has finished, so the log shows how long it really took.</p>
+
+        <form class="row" id="moveForm">
+          <label class="field">Angle (°)<input id="moveAngle" type="number" step="any" inputmode="decimal" value="45"></label>
+          <label class="field">Time (ms)<input id="moveMs" type="number" step="any" inputmode="numeric" value="1000"></label>
+          <button class="primary">Move <code>move()</code></button>
+        </form>
+
+        <hr class="sep">
+        <form id="tapForm">
+          <div class="row">
+            <label class="field">Angle (°)<input id="tapAngle" type="number" step="any" inputmode="decimal" value="60"></label>
+            <label class="field">Hold (ms)<input id="tapHold" type="number" step="any" inputmode="numeric" value="200"></label>
+            <label class="field narrow">Times<input id="tapTimes" type="number" step="1" min="1" inputmode="numeric" value="1"></label>
+            <label class="field narrow">Gap (ms)<input id="tapGap" type="number" step="any" inputmode="numeric" value="500"></label>
+          </div>
+          <div class="row"><button class="primary grow" id="tapBtn">Tap <code>tap()</code></button></div>
+          <p class="hint">Goes to the angle, holds, returns. Several times → each tap waits for the previous one, then the gap.</p>
+        </form>
+
+        <hr class="sep">
+        <form id="sweepForm">
+          <div class="row">
+            <label class="field">From (°)<input id="sweepFrom" type="number" step="any" inputmode="decimal" value="0"></label>
+            <label class="field">To (°)<input id="sweepTo" type="number" step="any" inputmode="decimal" value="160"></label>
+            <label class="field">Leg (ms)<input id="sweepLeg" type="number" step="any" inputmode="numeric" value="2400"></label>
+            <label class="field narrow">Cycles<input id="sweepCycles" type="number" step="1" min="0" inputmode="numeric" value="0"></label>
+          </div>
+          <div class="row"><button class="primary grow">Sweep <code>sweep()</code></button></div>
+          <p class="hint">Cycles 0 = until STOP. 0 → 160 in 2400 ms is Lekce 27.</p>
+        </form>
+
+        <hr class="sep">
+        <form class="row" id="pulseForm">
+          <label class="field">Raw pulse (µs)<input id="pulseIn" type="number" step="any" inputmode="numeric" value="1500"></label>
+          <button>Send <code>pulse()</code></button>
+        </form>
+        <p class="hint">500–2500 µs, ignores limits - for finding the servo's real end stops.</p>
+      </fieldset>
+
+      <fieldset class="card needs-conn">
+        <h2>Raw firmware command</h2>
+        <form class="row" id="rawForm">
+          <label class="field">Command <input id="rawIn" type="text" placeholder="e.g. 2:M 45 500; 2:W" autocomplete="off" spellcheck="false"></label>
+          <button class="primary">Send <code>board.send()</code></button>
+        </form>
+        <p class="hint">Sent as written: <code>2:</code> in front picks servo 2, no prefix = servo 1, <code>*:</code> = all (X, OFF, ON, C, H, W). Separate several with <code>;</code>.</p>
+      </fieldset>
+    </div>
+  </main>
+
+  <section class="card log-card">
+    <div class="card-head">
+      <h2>Log</h2>
+      <div class="row">
+        <button type="button" id="helpBtn">Help</button>
+        <button type="button" id="pingBtn">Ping</button>
+        <button type="button" id="statusBtn">Status</button>
+        <button type="button" id="clearBtn">Clear</button>
+      </div>
+    </div>
+    <ol id="log" class="log"><li class="empty">Library calls and their results show up here.</li></ol>
+  </section>
+
+  <footer>
+    Keys: <kbd>1</kbd> <kbd>2</kbd> pick a servo · <kbd>B</kbd> both · <kbd>←</kbd> <kbd>→</kbd> ±1° ·
+    <kbd>Shift</kbd>+<kbd>←</kbd> <kbd>→</kbd> ±10° · <kbd>Space</kbd> / <kbd>Esc</kbd> stop all ·
+    <kbd>C</kbd> center · <kbd>H</kbd> home
+  </footer>
+</div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const SVG = "http://www.w3.org/2000/svg";
+
+  let connected = false;
+  let currentPort = null;
+  let servos = [];              // [{ n, pin }]
+  const statuses = new Map();   // servo n -> last status
+  const dials = new Map();      // servo n -> { card, svg, key, needlePos, needleTarget }
+  let selected = 1;             // servo n, or "both"
+  let tapRun = null;
+
+  const targets = () => (selected === "both" ? servos.map((s) => s.n) : [selected]);
+  const single = () => (selected === "both" ? null : selected);
+
+  // ---------- server calls
+
+  async function post(path, body) {
+    const res = await fetch(path, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body || {}),
+    });
+    return res.json();
+  }
+
+  // Calls servo<target>.<method>(...args), or board.<method> for target "board", and logs it.
+  // quiet: log only failures.
+  async function call(target, method, args = [], { quiet = false } = {}) {
+    const who = target === "board" ? "board" : `servo${target}`;
+    const label = `${who}.${method}(${args.map(fmt).join(", ")})`;
+    let out;
+    try {
+      out = await post("/api/call", { target, method, args });
+    } catch (err) {
+      out = { ok: false, error: { message: `server unreachable (${err.message})` } };
+    }
+    if (!quiet || !out.ok) addLog(label, out);
+    return out;
+  }
+
+  // The same call on every selected servo at once. args may be a function of the servo n.
+  function callSel(method, args = [], opts) {
+    return Promise.all(targets().map((n) => call(n, method, typeof args === "function" ? args(n) : args, opts)));
+  }
+
+  const waitOn = () => $("waitToggle").checked;
+  const withWait = (opts = {}) => (waitOn() ? { ...opts, wait: true } : opts);
+  const waitArgs = () => (waitOn() ? [{ wait: true }] : []);
+  // Empty field -> null, so the library reports it instead of silently sending 0.
+  const num = (id) => ($(id).value.trim() === "" ? null : Number($(id).value));
+
+  // ---------- log
+
+  function fmt(v) {
+    if (v === null || v === undefined) return String(v);
+    if (typeof v === "string") return JSON.stringify(v);
+    if (typeof v !== "object") return String(v);
+    if (Array.isArray(v)) return `[${v.map(fmt).join(", ")}]`;
+    const parts = Object.entries(v).map(([k, x]) => `${k}: ${fmt(x)}`);
+    return parts.length ? `{ ${parts.join(", ")} }` : "{}";
+  }
+
+  function addLog(label, out) {
+    const list = $("log");
+    const empty = list.querySelector(".empty");
+    if (empty) empty.remove();
+    const li = document.createElement("li");
+    li.className = out.ok ? "ok" : "err";
+    const now = new Date();
+    const time = now.toTimeString().slice(0, 8) + "." + String(now.getMilliseconds()).padStart(3, "0");
+    let res;
+    if (out.ok) {
+      const lines = Array.isArray(out.result) && out.result.every((x) => typeof x === "string");
+      res = lines ? out.result.join("\n") : out.result === null ? "done" : fmt(out.result);
+    } else {
+      const e = out.error || {};
+      res = `${e.name || "Error"}${e.code ? " " + e.code : ""}: ${e.message}`;
+    }
+    li.innerHTML = "<time></time><code class='call'></code><span class='ms'></span><span class='res'></span>";
+    li.querySelector("time").textContent = time;
+    li.querySelector(".call").textContent = label;
+    li.querySelector(".ms").textContent = out.ms !== undefined ? `${out.ms} ms` : "";
+    li.querySelector(".res").textContent = res;
+    list.prepend(li);
+    while (list.children.length > 300) list.lastElementChild.remove();
+  }
+
+  let toastTimer;
+  function toast(text) {
+    const el = $("toast");
+    el.textContent = text;
+    el.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove("show"), 4000);
+  }
+
+  // ---------- dials
+
+  const CX = 130, CY = 134, R = 108;
+
+  function point(angle, range, radius) {
+    const t = (angle / range) * Math.PI;
+    return [CX - radius * Math.cos(t), CY - radius * Math.sin(t)];
+  }
+
+  function arc(from, to, range, radius) {
+    const [x1, y1] = point(from, range, radius);
+    const [x2, y2] = point(to, range, radius);
+    return `M ${x1.toFixed(2)} ${y1.toFixed(2)} A ${radius} ${radius} 0 0 1 ${x2.toFixed(2)} ${y2.toFixed(2)}`;
+  }
+
+  function el(name, attrs, parent) {
+    const node = document.createElementNS(SVG, name);
+    for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
+    parent.appendChild(node);
+    return node;
+  }
+
+  function buildDials() {
+    const box = $("dials");
+    box.textContent = "";
+    dials.clear();
+    for (const s of servos) {
+      const card = document.createElement("div");
+      card.className = "card dial-card";
+      card.tabIndex = 0;
+      card.setAttribute("role", "button");
+      card.setAttribute("aria-label", `Servo ${s.n}, pin ${s.pin} - control this servo`);
+      card.innerHTML = `
+        <div class="dial-head"><b>Servo ${s.n}</b><span>pin ${s.pin}</span></div>
+        <svg class="dial" viewBox="0 0 260 150" aria-hidden="true"></svg>
+        <div class="readout">
+          <div>
+            <div class="big"><span class="val-pos">–</span><span class="unit">°</span></div>
+            <div class="meta">target <b class="val-target">–</b>° · pulse <b class="val-us">–</b> µs</div>
+          </div>
+          <div class="chips"><span class="chip mode">idle</span><span class="chip attach">–</span><span class="chip saved">–</span></div>
+        </div>`;
+      card.addEventListener("click", () => select(s.n));
+      card.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") select(s.n);
+      });
+      box.appendChild(card);
+      dials.set(s.n, { card, svg: card.querySelector("svg"), key: "" });
+    }
+  }
+
+  // Static parts depend on range, limits and home; redrawn only when those change.
+  function drawDial(d, s) {
+    const key = [s.range, s.lo, s.hi, s.home].join();
+    if (key === d.key) return;
+    d.key = key;
+    const svg = d.svg;
+    svg.textContent = "";
+    el("path", { class: "track", d: arc(0, s.range, s.range, R) }, svg);
+    if (s.hi > s.lo) el("path", { class: "allowed", d: arc(s.lo, s.hi, s.range, R) }, svg);
+    for (let i = 0; i <= 12; i++) {
+      const a = (s.range / 12) * i;
+      const isMajor = i % 2 === 0;
+      const [x1, y1] = point(a, s.range, R - 11);
+      const [x2, y2] = point(a, s.range, R - (isMajor ? 20 : 16));
+      el("line", { class: "tick" + (isMajor ? "" : " minor"), x1, y1, x2, y2 }, svg);
+      if (isMajor) {
+        const [lx, ly] = point(a, s.range, R - 30);
+        el("text", { class: "label", x: lx, y: ly }, svg).textContent = Math.round(a);
+      }
+    }
+    const [hx, hy] = point(s.home, s.range, R + 12);
+    const home = el("circle", { class: "home", cx: hx, cy: hy, r: 4 }, svg);
+    el("title", {}, home).textContent = `home ${s.home}°`;
+    // Target: a mark across the track. Position: a needle short enough to clear the labels.
+    d.needleTarget = el("g", { class: "needle target" }, svg);
+    el("line", { x1: CX - (R + 9), y1: CY, x2: CX - (R - 9), y2: CY }, d.needleTarget);
+    d.needlePos = el("g", { class: "needle pos" }, svg);
+    el("line", { x1: CX, y1: CY, x2: CX - (R - 42), y2: CY }, d.needlePos);
+    el("circle", { class: "hub", cx: CX, cy: CY, r: 7 }, svg);
+  }
+
+  const turn = (node, angle, range) => { node.style.transform = `rotate(${(angle / range) * 180}deg)`; };
+
+  function setChip(node, text, kind) {
+    node.textContent = text;
+    node.className = `chip ${node.classList[1]} ${kind || ""}`;
+  }
+
+  function updateDial(s) {
+    const d = dials.get(s.servo);
+    if (!d) return;
+    drawDial(d, s);
+    turn(d.needlePos, s.pos, s.range);
+    turn(d.needleTarget, s.target, s.range);
+    d.card.querySelector(".val-pos").textContent = s.pos.toFixed(1);
+    d.card.querySelector(".val-target").textContent = s.target.toFixed(1);
+    d.card.querySelector(".val-us").textContent = s.us;
+    setChip(d.card.querySelector(".mode"), s.mode, s.moving ? "on" : "");
+    setChip(d.card.querySelector(".attach"), s.attached ? "holding" : "relaxed", s.attached ? "good" : "warn");
+    setChip(d.card.querySelector(".saved"), s.saved ? "saved" : "unsaved", s.saved ? "good" : "warn");
+  }
+
+  // ---------- selection and status
+
+  function syncField(id, value, force) {
+    const input = $(id);
+    if (!force && (document.activeElement === input || input.dataset.dirty)) return;
+    delete input.dataset.dirty;
+    input.value = value;
+  }
+
+  let sliderBusy = false, sliderNext = null, sliderHeld = false;
+
+  // Brings the controls in line with the selected servo. force: also overwrite settings
+  // fields the user has typed into (used when switching servos).
+  function syncControls(force = false) {
+    const one = single();
+    const s = one ? statuses.get(one) : null;
+    const all = targets().map((n) => statuses.get(n)).filter(Boolean);
+    const slider = $("slider");
+    if (all.length) {
+      const lo = Math.min(...all.map((x) => x.lo));
+      const hi = Math.max(...all.map((x) => x.hi));
+      slider.min = lo;
+      slider.max = hi;
+      $("sliderMin").textContent = `${lo}°`;
+      $("sliderMax").textContent = `${hi}°`;
+    }
+    if (s && !sliderHeld && !sliderBusy && sliderNext === null && document.activeElement !== slider) {
+      slider.value = s.target;
+      $("sliderVal").textContent = `${s.target.toFixed(1)}°`;
+    }
+    if (!s) return;
+    syncField("speedIn", s.speed, force);
+    syncField("loIn", s.lo, force);
+    syncField("hiIn", s.hi, force);
+    syncField("minUsIn", s.minUs, force);
+    syncField("maxUsIn", s.maxUs, force);
+    syncField("rangeIn", s.range, force);
+    syncField("homeIn", s.home, force);
+    if (force || document.activeElement !== $("easeToggle")) $("easeToggle").checked = s.ease;
+    $("savedNote").textContent = s.saved ? "saved" : "unsaved changes";
+    $("savedNote").className = "chip " + (s.saved ? "good" : "warn");
+  }
+
+  function select(which) {
+    if (which !== "both" && !servos.some((s) => s.n === which)) return;
+    selected = which;
+    for (const btn of $("picker").children) {
+      const on = btn.dataset.pick === String(which);
+      btn.classList.toggle("on", on);
+      btn.setAttribute("aria-pressed", on);
+    }
+    for (const [n, d] of dials) d.card.classList.toggle("selected", which === "both" || which === n);
+    const who = which === "both" ? "both servos" : `servo ${which}`;
+    for (const span of document.querySelectorAll(".who")) span.textContent = who;
+    $("oneHint").hidden = which !== "both";
+    applyEnabled();
+    syncControls(true);
+  }
+
+  function buildPicker() {
+    const picker = $("picker");
+    picker.textContent = "";
+    const options = [...servos.map((s) => [String(s.n), `Servo ${s.n}`]), ["both", "Both"]];
+    for (const [value, text] of options) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.dataset.pick = value;
+      btn.textContent = text;
+      btn.addEventListener("click", () => select(value === "both" ? "both" : Number(value)));
+      picker.appendChild(btn);
+    }
+  }
+
+  function applyEnabled() {
+    for (const fs of document.querySelectorAll(".needs-conn")) {
+      fs.disabled = !connected || (fs.classList.contains("needs-one") && selected === "both");
+    }
+  }
+
+  function applyStatus(s) {
+    statuses.set(s.servo, s);
+    updateDial(s);
+    if (targets().includes(s.servo)) syncControls();
+    if (s.latency !== null) $("connText").textContent = `${currentPort || "?"} · ${s.latency} ms`;
+  }
+
+  // ---------- connection
+
+  function applyState(st) {
+    connected = st.connected;
+    currentPort = st.port;
+    $("connPill").className = "pill " + (connected ? "ok" : "bad");
+    $("connText").textContent = connected ? st.port : "Not connected";
+    $("connectBtn").textContent = connected ? "Disconnect" : "Connect";
+    if (connected) {
+      $("subtitle").innerHTML = `ServoCtl ${st.version} · ${st.servos.map((s) => `servo ${s.n} on pin ${s.pin}`).join(", ")} · every button calls <code>servo.js</code>`;
+      const layout = st.servos.map((s) => `${s.n}:${s.pin}`).join();
+      if (layout !== servos.map((s) => `${s.n}:${s.pin}`).join()) {
+        servos = st.servos;
+        statuses.clear();
+        buildDials();
+        buildPicker();
+      }
+      select(selected === "both" || servos.some((s) => s.n === selected) ? selected : 1);
+      selectPort(st.port);
+    }
+    applyEnabled();
+    const banner = $("banner");
+    banner.hidden = connected;
+    banner.className = "banner" + (st.error ? " err" : "");
+    banner.textContent = st.error || "Not connected. Pick the Arduino's port and press Connect.";
+  }
+
+  function selectPort(port) {
+    const sel = $("portSelect");
+    if ([...sel.options].some((o) => o.value === port)) sel.value = port;
+  }
+
+  async function loadPorts() {
+    try {
+      const ports = await (await fetch("/api/ports")).json();
+      const sel = $("portSelect");
+      const keep = sel.value;
+      sel.textContent = "";
+      for (const p of ports) {
+        const opt = document.createElement("option");
+        opt.value = p.path;
+        opt.textContent = `${p.path}${p.arduino ? " · Arduino" : ""}`;
+        opt.title = p.name;
+        sel.appendChild(opt);
+      }
+      if (!ports.length) sel.innerHTML = "<option value=''>no ports</option>";
+      selectPort(currentPort || keep || (ports.find((p) => p.arduino) || {}).path);
+    } catch { /* server down; the banner says so */ }
+  }
+
+  $("portSelect").addEventListener("focus", loadPorts);
+  $("connectBtn").addEventListener("click", async () => {
+    $("connectBtn").disabled = true;
+    try {
+      if (connected) await post("/api/disconnect");
+      else await post("/api/connect", { port: $("portSelect").value || undefined });
+    } finally {
+      $("connectBtn").disabled = false;
+    }
+  });
+
+  function listen() {
+    const es = new EventSource("/api/events");
+    es.addEventListener("state", (e) => applyState(JSON.parse(e.data)));
+    es.addEventListener("status", (e) => applyStatus(JSON.parse(e.data)));
+    es.addEventListener("restart", () => toast("The Arduino restarted - the servos went to their home angles."));
+    es.onopen = () => loadPorts();
+    es.onerror = () => {
+      applyState({ connected: false, error: "The page lost the server. Is node servo-web.js still running?" });
+    };
+  }
+
+  // ---------- controls
+
+  // Dragging sends the newest angle as soon as the previous one is answered, so a fast
+  // drag never builds a backlog.
+  async function pumpSlider() {
+    if (sliderBusy || sliderNext === null) return;
+    const value = sliderNext;
+    sliderNext = null;
+    sliderBusy = true;
+    await callSel("angle", [value], { quiet: true });
+    sliderBusy = false;
+    pumpSlider();
+  }
+  const slider = $("slider");
+  slider.addEventListener("input", () => {
+    sliderNext = Number(slider.value);
+    $("sliderVal").textContent = `${sliderNext}°`;
+    pumpSlider();
+  });
+  slider.addEventListener("pointerdown", () => { sliderHeld = true; });
+  window.addEventListener("pointerup", () => { sliderHeld = false; });
+  slider.addEventListener("change", () => callSel("angle", [Number(slider.value)]));
+
+  for (const btn of document.querySelectorAll("[data-step]")) {
+    btn.addEventListener("click", () => callSel("step", [Number(btn.dataset.step), ...waitArgs()]));
+  }
+  const limitOf = (n, key, fallback) => (statuses.get(n) ? statuses.get(n)[key] : fallback);
+  $("minBtn").addEventListener("click", () => callSel("angle", (n) => [limitOf(n, "lo", 0), ...waitArgs()]));
+  $("maxBtn").addEventListener("click", () => callSel("angle", (n) => [limitOf(n, "hi", 180), ...waitArgs()]));
+  $("centerBtn").addEventListener("click", () => callSel("center", waitArgs()));
+  $("homeBtn").addEventListener("click", () => callSel("home", waitArgs()));
+  $("relaxBtn").addEventListener("click", () => callSel("relax"));
+  $("holdBtn").addEventListener("click", () => callSel("hold"));
+
+  function stopAll() {
+    if (tapRun) tapRun.stop = true;
+    call("board", "stop");
+  }
+  $("stopBtn").addEventListener("click", stopAll);
+
+  function onSubmit(id, handler) {
+    $(id).addEventListener("submit", (e) => {
+      e.preventDefault();
+      handler();
+    });
+  }
+
+  onSubmit("angleForm", () => callSel("angle", [num("angleIn"), ...waitArgs()]));
+  onSubmit("moveForm", () => callSel("move", [num("moveAngle"), num("moveMs"), ...waitArgs()]));
+  onSubmit("pulseForm", () => callSel("pulse", [num("pulseIn"), ...waitArgs()]));
+  onSubmit("sweepForm", () => callSel("sweep", [num("sweepFrom"), num("sweepTo"),
+    withWait({ leg: num("sweepLeg"), cycles: num("sweepCycles") })]));
+
+  onSubmit("tapForm", async () => {
+    if (tapRun) return;
+    const deg = num("tapAngle");
+    const hold = num("tapHold");
+    const times = Math.max(1, Math.floor(num("tapTimes") || 1));
+    const gap = Math.max(0, num("tapGap") || 0);
+    if (times === 1) {
+      await callSel("tap", [deg, withWait({ hold })]);
+      return;
+    }
+    const btn = $("tapBtn");
+    tapRun = { stop: false };
+    btn.disabled = true;
+    for (let i = 1; i <= times && !tapRun.stop; i++) {
+      btn.textContent = `Tapping ${i} / ${times}…`;
+      const outs = await callSel("tap", [deg, { hold, wait: true }]);
+      if (outs.some((out) => !out.ok)) break;
+      if (i < times && !tapRun.stop) await sleep(gap);
+    }
+    tapRun = null;
+    btn.disabled = false;
+    btn.innerHTML = "Tap <code>tap()</code>";
+  });
+
+  // Settings (one servo): typing marks a field so live status doesn't overwrite it until sent.
+  for (const input of document.querySelectorAll("#speedForm input, #limitsForm input, #calForm input, #homeForm input")) {
+    input.addEventListener("input", () => { input.dataset.dirty = "1"; });
+  }
+  const clean = (...ids) => ids.forEach((id) => delete $(id).dataset.dirty);
+  const one = (method, args = []) => call(single(), method, args);
+
+  onSubmit("speedForm", async () => {
+    await one("speed", [num("speedIn")]);
+    clean("speedIn");
+  });
+  $("easeToggle").addEventListener("change", () => one("ease", [$("easeToggle").checked]));
+  onSubmit("limitsForm", async () => {
+    await one("limits", [num("loIn"), num("hiIn")]);
+    clean("loIn", "hiIn");
+  });
+  $("limitsOffBtn").addEventListener("click", async () => {
+    await one("limits", [false]);
+    clean("loIn", "hiIn");
+  });
+  onSubmit("calForm", async () => {
+    await one("calibrate", [num("minUsIn"), num("maxUsIn"), num("rangeIn")]);
+    clean("minUsIn", "maxUsIn", "rangeIn");
+  });
+  onSubmit("homeForm", async () => {
+    await one("setHome", [num("homeIn")]);
+    clean("homeIn");
+  });
+  $("homeHereBtn").addEventListener("click", async () => {
+    await one("setHome");
+    clean("homeIn");
+  });
+  $("saveBtn").addEventListener("click", () => one("save"));
+  $("loadBtn").addEventListener("click", () => one("load"));
+  $("defaultsBtn").addEventListener("click", () => one("defaults"));
+
+  onSubmit("rawForm", async () => {
+    for (const part of $("rawIn").value.split(";")) {
+      const cmd = part.trim();
+      if (!cmd) continue;
+      const out = await call("board", "send", [cmd]);
+      if (!out.ok) break;
+    }
+  });
+
+  $("helpBtn").addEventListener("click", () => call("board", "help"));
+  $("pingBtn").addEventListener("click", () => call("board", "ping"));
+  $("statusBtn").addEventListener("click", () => call("board", "status"));
+  $("clearBtn").addEventListener("click", () => {
+    $("log").innerHTML = "<li class='empty'>Library calls and their results show up here.</li>";
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    const typing = e.target.closest("input, select, textarea");
+    const textEntry = typing && e.target.type !== "range" && e.target.type !== "checkbox";
+    if (e.key === "Escape" || (e.key === " " && !textEntry)) {
+      if (connected) {
+        e.preventDefault();
+        stopAll();
+      }
+      return;
+    }
+    if (typing || !connected) return;
+    const step = e.shiftKey ? 10 : 1;
+    const key = e.key.toLowerCase();
+    if (e.key === "ArrowLeft") callSel("step", [-step]);
+    else if (e.key === "ArrowRight") callSel("step", [step]);
+    else if (key === "c") callSel("center");
+    else if (key === "h") callSel("home");
+    else if (key === "b") select("both");
+    else if (/^[1-9]$/.test(key) && servos.some((s) => s.n === Number(key))) select(Number(key));
+    else return;
+    e.preventDefault();
+  });
+
+  applyState({ connected: false });
+  listen();
+})();
+</script>
+</body>
+</html>

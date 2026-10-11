@@ -1,0 +1,14 @@
+# Install PyTorch with CUDA first (pytorch.org install selector). On this PC:
+#   pip install torch==2.6.0 torchvision==0.21.0 --index-url https://download.pytorch.org/whl/cu124
+ultralytics>=8.4
+opencv-python
+numpy
+imagehash
+pyyaml
+dxcam>=0.3
+mss
+lap
+# TensorRT export. Ultralytics does not install it on Windows. 10.7 matches driver 560 / CUDA 12.6.
+tensorrt-cu12==10.7.0.post1
+onnx
+onnxslim

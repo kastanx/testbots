@@ -1,0 +1,106 @@
+:root {
+  color-scheme: dark;
+  --bg: #3a3a3a;
+  --panel: rgba(30, 30, 30, 0.86);
+  --text: #e2e2e2;
+  --dim: #9c9c9c;
+  --accent: #8fb3e8;
+  --warn: #e2c06f;
+  --bad: #e58b7f;
+}
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font: 13px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+#stage {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  display: block;
+}
+#stage.playing { cursor: none; }
+
+#toolbar {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  width: 340px;
+  max-width: calc(100vw - 24px);
+  background: var(--panel);
+  border-radius: 8px;
+  padding: 10px 12px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+  user-select: none;
+}
+#toolbar.hidden, #charts.hidden { display: none; }
+.row { display: flex; align-items: center; gap: 8px; margin: 6px 0; flex-wrap: wrap; }
+.row.title { justify-content: space-between; margin-top: 0; }
+.badge { font-size: 11px; padding: 1px 6px; border-radius: 4px; background: #555; }
+.badge.synthetic { background: #8a5a14; }
+select, input[type=number] {
+  background: #1f1f1f;
+  color: var(--text);
+  border: 1px solid #484848;
+  border-radius: 4px;
+  padding: 3px 5px;
+  font: inherit;
+}
+select#model { flex: 1; }
+input[type=number] { width: 58px; }
+input[type=range] { flex: 1; }
+.toggles label { color: var(--dim); }
+button {
+  background: #4a6fa5;
+  color: #fff;
+  border: 0;
+  border-radius: 5px;
+  padding: 5px 9px;
+  font: inherit;
+  cursor: pointer;
+}
+button.secondary { background: #4a4a4a; }
+button:disabled { opacity: 0.45; cursor: default; }
+.status { color: var(--dim); min-height: 18px; margin-top: 6px; white-space: pre-line; }
+.status .warn { color: var(--warn); }
+.status .bad { color: var(--bad); }
+.hint { color: #777; font-size: 12px; margin-top: 4px; }
+
+#charts {
+  position: fixed;
+  right: 12px;
+  bottom: 12px;
+  width: 420px;
+  max-width: calc(100vw - 24px);
+  background: var(--panel);
+  border-radius: 8px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+#charts canvas { width: 100%; height: 120px; display: block; }
+
+#blind {
+  position: fixed;
+  left: 50%;
+  bottom: 40px;
+  transform: translateX(-50%);
+  text-align: center;
+  background: var(--panel);
+  border-radius: 10px;
+  padding: 14px 20px;
+  min-width: 320px;
+  max-width: calc(100vw - 32px);
+}
+#blind[hidden] { display: none; }
+#blind-msg { font-size: 16px; margin-bottom: 10px; white-space: pre-line; }
+#blind-buttons { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+#blind-buttons[hidden] { display: none; }
+.dim { color: var(--dim); }

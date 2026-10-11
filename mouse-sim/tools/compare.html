@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Movement compare</title>
+<style>
+:root {
+  --bg: #101214; --panel: #171a1d; --line: #2a2f35; --text: #e6e8ea; --dim: #8b949e;
+  --you: #4fc3f7; --replay: #ffb74d; --strokes: #81c784;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+  font: 13px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; user-select: none; }
+body { display: flex; flex-direction: column; }
+header { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 8px 12px;
+  background: var(--panel); border-bottom: 1px solid var(--line); }
+h1 { font-size: 14px; margin: 0 6px 0 0; font-weight: 600; }
+header label, .grp { display: inline-flex; align-items: center; gap: 4px; color: var(--dim); }
+input[type=number] { width: 54px; background: var(--bg); color: var(--text); border: 1px solid var(--line);
+  border-radius: 4px; padding: 3px 5px; font: inherit; }
+button { background: #23292f; color: var(--text); border: 1px solid #3a424a; border-radius: 5px; padding: 5px 10px;
+  cursor: pointer; font: inherit; }
+button:hover { background: #2c343b; }
+button.primary { background: #1d4a66; border-color: #2d6f95; }
+kbd { font: 11px ui-monospace, Consolas, monospace; color: var(--dim); margin-left: 3px; }
+.legend { display: inline-flex; gap: 12px; margin-left: auto; }
+.legend label { color: var(--text); cursor: pointer; }
+.sw { display: inline-block; width: 16px; height: 3px; border-radius: 2px; }
+main { flex: 1; display: flex; min-height: 0; }
+#stage { flex: 1; position: relative; min-width: 0; }
+#stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+#hint { position: absolute; left: 12px; top: 10px; padding: 6px 10px; border-radius: 6px;
+  background: rgba(0, 0, 0, .6); pointer-events: none; max-width: 70%; }
+aside { width: 520px; flex: none; overflow-x: hidden; border-left: 1px solid var(--line); background: var(--panel);
+  overflow-y: auto; padding: 6px 10px 12px; }
+aside h2 { font-size: 11px; font-weight: 600; margin: 10px 0 4px; color: var(--dim); text-transform: uppercase;
+  letter-spacing: .05em; }
+.chart { width: 100%; height: 180px; display: block; background: var(--bg); border: 1px solid var(--line);
+  border-radius: 4px; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 12px; }
+th, td { padding: 3px 4px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+th { font-weight: 600; }
+th:first-child, td:first-child { text-align: left; color: var(--dim); font-weight: normal; }
+td .avg { color: var(--dim); font-size: 11px; margin-left: 4px; }
+.unit { color: var(--dim); font-size: 11px; }
+#status { color: var(--dim); font-size: 12px; margin-top: 10px; white-space: pre-wrap; user-select: text; }
+</style>
+</head>
+<body>
+<header>
+  <h1>You · Replay · Strokes</h1>
+  <span class="grp">target <input id="tw" type="number" min="4" max="400" value="30"> ×
+    <input id="th" type="number" min="4" max="400" value="30"> px</span>
+  <span class="grp">samples <input id="n" type="number" min="1" max="12" value="5"></span>
+  <label title="like mouseover2: the models start moving at once"><input id="skip" type="checkbox" checked> skip reaction</label>
+  <label title="like mouseover2: one click, on the target"><input id="nomiss" type="checkbox" checked> no misses</label>
+  <button id="try" class="primary">Try it yourself<kbd>Space</kbd></button>
+  <button id="gen">New samples<kbd>G</kbd></button>
+  <button id="play">Play<kbd>P</kbd></button>
+  <label title="play every movement from its own onset, side by side"><input id="align" type="checkbox" checked> from onset</label>
+  <span class="legend">
+    <label><input type="checkbox" data-show="you" checked><span class="sw" style="background:var(--you)"></span>You</label>
+    <label><input type="checkbox" data-show="replay" checked><span class="sw" style="background:var(--replay)"></span>Replay</label>
+    <label><input type="checkbox" data-show="strokes" checked><span class="sw" style="background:var(--strokes)"></span>Strokes</label>
+    <label title="all samples, not just the first"><input type="checkbox" data-show="all" checked>all samples</label>
+  </span>
+</header>
+<main>
+  <section id="stage"><canvas id="c"></canvas><div id="hint"></div></section>
+  <aside>
+    <h2>Speed <span class="unit">px/ms, from movement onset; dots = press</span></h2>
+    <canvas id="speed" class="chart"></canvas>
+    <h2>Distance to the target centre <span class="unit">px</span></h2>
+    <canvas id="dist" class="chart"></canvas>
+    <h2>Measured like the harness <span class="unit">first sample (average of all)</span></h2>
+    <table id="stats"></table>
+    <div id="status"></div>
+  </aside>
+</main>
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+const COLOR = { you: "#4fc3f7", replay: "#ffb74d", strokes: "#81c784" };
+const START_R = 7;                       // css px
+const cv = $("c");
+const ctx = cv.getContext("2d");
+let dpr = window.devicePixelRatio || 1;
+
+const S = {
+  start: null, target: null,             // physical px on the stage
+  you: null, replay: [], strokes: [],    // trials as the server measured them (physical px)
+  show: { you: true, replay: true, strokes: true, all: true },
+  mode: "idle",                          // idle | armed | recording
+  still: null, rec: null, drag: null, play: null, info: null,
+};
+
+// ---- helpers -----------------------------------------------------------------------------
+function hint(text) { $("hint").textContent = text; $("hint").style.display = text ? "" : "none"; }
+function status(text) { $("status").textContent = text; }
+async function post(url, body) {
+  const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(typeof j.detail === "string" ? j.detail : JSON.stringify(j.detail || j));
+  return j;
+}
+function local(e) {
+  const r = cv.getBoundingClientRect();
+  const cx = e.clientX - r.left, cy = e.clientY - r.top;
+  return { cx, cy, x: cx * dpr, y: cy * dpr };
+}
+function inTarget(x, y) {
+  const t = S.target;
+  return Math.abs(x - t.cx) <= t.w / 2 && Math.abs(y - t.cy) <= t.h / 2;
+}
+const pressIndex = (tr, k = 0) => Math.min(Math.ceil(tr.clicks[k][0]), tr.pos.length - 1);
+const onset = (tr) => (tr.onset ?? 0);
+
+// ---- layout ------------------------------------------------------------------------------
+function fit(canvas) {
+  const r = canvas.getBoundingClientRect();
+  canvas.width = Math.max(1, Math.round(r.width * dpr));
+  canvas.height = Math.max(1, Math.round(r.height * dpr));
+}
+function resize() {
+  dpr = window.devicePixelRatio || 1;
+  for (const c of [cv, $("speed"), $("dist")]) fit(c);
+  if (!S.placed) {           // until you move them: a dot and a target across the stage
+    S.start = { x: Math.round(cv.width * 0.22), y: Math.round(cv.height * 0.62) };
+    S.target = { cx: Math.round(cv.width * 0.66), cy: Math.round(cv.height * 0.34), w: +$("tw").value, h: +$("th").value };
+  }
+  S.start.x = Math.min(Math.max(S.start.x, 10), cv.width - 10);
+  S.start.y = Math.min(Math.max(S.start.y, 10), cv.height - 10);
+  S.target.cx = Math.min(Math.max(S.target.cx, S.target.w / 2), cv.width - S.target.w / 2);
+  S.target.cy = Math.min(Math.max(S.target.cy, S.target.h / 2), cv.height - S.target.h / 2);
+  draw();
+  charts();
+}
+
+// ---- the stage ---------------------------------------------------------------------------
+function trace(pos, color, width, alpha, upto = pos.length - 1) {
+  if (!pos || pos.length < 2) return;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = width;
+  ctx.lineJoin = "round";
+  ctx.beginPath();
+  ctx.moveTo(pos[0][0] + 0.5, pos[0][1] + 0.5);
+  for (let i = 1; i <= Math.min(upto, pos.length - 1); i++) ctx.lineTo(pos[i][0] + 0.5, pos[i][1] + 0.5);
+  ctx.stroke();
+  ctx.restore();
+}
+function ring(x, y, color, r, alpha = 1, filled = false) {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = 1.5 * dpr;
+  ctx.beginPath();
+  ctx.arc(x + 0.5, y + 0.5, r, 0, Math.PI * 2);
+  filled ? ctx.fill() : ctx.stroke();
+  ctx.restore();
+}
+function draw() {
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  // grid
+  ctx.save();
+  ctx.strokeStyle = "#1a1e22";
+  ctx.lineWidth = 1;
+  const g = 50 * dpr;
+  ctx.beginPath();
+  for (let x = 0; x < cv.width; x += g) { ctx.moveTo(x + 0.5, 0); ctx.lineTo(x + 0.5, cv.height); }
+  for (let y = 0; y < cv.height; y += g) { ctx.moveTo(0, y + 0.5); ctx.lineTo(cv.width, y + 0.5); }
+  ctx.stroke();
+  ctx.restore();
+  // target
+  const t = S.target;
+  const lit = S.mode === "recording";
+  ctx.save();
+  ctx.fillStyle = lit ? "rgba(255,255,255,.45)" : "rgba(255,255,255,.12)";
+  ctx.strokeStyle = lit ? "#fff" : "rgba(255,255,255,.55)";
+  ctx.lineWidth = 1;
+  ctx.fillRect(t.cx - t.w / 2, t.cy - t.h / 2, t.w, t.h);
+  ctx.strokeRect(t.cx - t.w / 2 + 0.5, t.cy - t.h / 2 + 0.5, t.w - 1, t.h - 1);
+  ctx.restore();
+  // start dot
+  ring(S.start.x, S.start.y, S.mode === "armed" ? "#4fc3f7" : "#e6e8ea", START_R * dpr, S.mode === "armed" ? 0.9 : 0.6, S.mode === "armed");
+  ring(S.start.x, S.start.y, "#e6e8ea", 1.5 * dpr, 1, true);
+
+  const play = S.play;
+  const layers = [["replay", S.replay], ["strokes", S.strokes], ["you", S.you ? [S.you] : []]];
+  for (const [k, list] of layers) {
+    if (!S.show[k] || !list.length) continue;
+    const shown = S.show.all ? list : list.slice(0, 1);
+    shown.forEach((tr, j) => {
+      const main = j === 0;
+      const at = play && main ? play.index(k) : undefined;
+      trace(tr.pos, COLOR[k], (main ? 2.2 : 1) * dpr, play ? (main ? 1 : 0.15) : (main ? 1 : 0.35), at);
+      if (!play) {
+        tr.clicks.forEach((c, ci) => {
+          const p = tr.pos[pressIndex(tr, ci)];
+          ring(p[0], p[1], COLOR[k], (main ? 5 : 3.5) * dpr, main ? 1 : 0.5, !tr.hits[ci] ? false : main);
+        });
+      } else if (main && at !== undefined) {
+        const p = tr.pos[Math.max(0, Math.min(Math.floor(at), tr.pos.length - 1))];
+        ring(p[0], p[1], COLOR[k], 5 * dpr, 1, true);
+      }
+    });
+  }
+}
+
+// ---- charts --------------------------------------------------------------------------------
+function niceStep(range, n) {
+  const raw = range / n;
+  const p = Math.pow(10, Math.floor(Math.log10(raw)));
+  for (const m of [1, 2, 2.5, 5, 10]) if (m * p >= raw) return m * p;
+  return 10 * p;
+}
+function chart(canvas, series, cursorX) {
+  const c = canvas.getContext("2d");
+  const W = canvas.width / dpr, H = canvas.height / dpr;
+  c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  c.clearRect(0, 0, W, H);
+  const pts = series.flatMap((s) => s.pts);
+  if (!pts.length) {
+    c.fillStyle = "#8b949e";
+    c.fillText("nothing yet", 10, 20);
+    return;
+  }
+  let x0 = Math.min(...series.map((s) => s.pts[0][0])), x1 = Math.max(...series.map((s) => s.pts[s.pts.length - 1][0]));
+  let y1 = Math.max(...pts.map((p) => p[1])) * 1.06 || 1;
+  const L = 40, R = 8, T = 8, B = 20;
+  const X = (x) => L + (x - x0) / (x1 - x0 || 1) * (W - L - R);
+  const Y = (y) => H - B - y / y1 * (H - T - B);
+  c.font = "10px system-ui, sans-serif";
+  c.strokeStyle = "#2a2f35";
+  c.fillStyle = "#8b949e";
+  c.lineWidth = 1;
+  const xs = niceStep(x1 - x0, 6), ys = niceStep(y1, 4);
+  c.beginPath();
+  for (let x = Math.ceil(x0 / xs) * xs; x <= x1; x += xs) {
+    c.moveTo(Math.round(X(x)) + 0.5, T); c.lineTo(Math.round(X(x)) + 0.5, H - B);
+    c.fillText(`${Math.round(x)}`, X(x) - 8, H - 6);
+  }
+  for (let y = 0; y <= y1; y += ys) {
+    c.moveTo(L, Math.round(Y(y)) + 0.5); c.lineTo(W - R, Math.round(Y(y)) + 0.5);
+    c.fillText(ys < 1 ? y.toFixed(1) : `${Math.round(y)}`, 4, Y(y) + 3);
+  }
+  c.stroke();
+  for (const s of series) {
+    c.save();
+    c.globalAlpha = s.alpha;
+    c.strokeStyle = s.color;
+    c.lineWidth = s.width;
+    c.beginPath();
+    s.pts.forEach(([x, y], i) => (i ? c.lineTo(X(x), Y(y)) : c.moveTo(X(x), Y(y))));
+    c.stroke();
+    for (const m of s.marks || []) {
+      const near = s.pts.reduce((a, b) => (Math.abs(b[0] - m) < Math.abs(a[0] - m) ? b : a));
+      c.fillStyle = s.color;
+      c.beginPath();
+      c.arc(X(near[0]), Y(near[1]), s.width > 1.5 ? 3.5 : 2.2, 0, Math.PI * 2);
+      c.fill();
+    }
+    c.restore();
+  }
+  if (cursorX !== undefined && cursorX >= x0 && cursorX <= x1) {
+    c.strokeStyle = "rgba(255,255,255,.6)";
+    c.beginPath();
+    c.moveTo(X(cursorX), T);
+    c.lineTo(X(cursorX), H - B);
+    c.stroke();
+  }
+}
+function seriesOf(make) {
+  const out = [];
+  for (const k of ["replay", "strokes", "you"]) {
+    const list = k === "you" ? (S.you ? [S.you] : []) : S[k];
+    if (!S.show[k]) continue;
+    (S.show.all ? list : list.slice(0, 1)).forEach((tr, j) => {
+      const o = onset(tr);
+      const end = Math.min(tr.pos.length, Math.ceil((tr.up ?? tr.pos.length) + 30));
+      const pts = [];
+      for (let i = Math.max(0, o - 100); i < end; i++) pts.push([i - o, make(tr, i)]);
+      if (pts.length < 2) return;
+      out.push({ pts, color: COLOR[k], width: j === 0 ? 2 : 1, alpha: j === 0 ? 1 : 0.3,
+                 marks: tr.clicks.map((cl) => cl[0] - o) });
+    });
+  }
+  return out;
+}
+function charts(cursorX) {
+  chart($("speed"), seriesOf((tr, i) => tr.speed[i] ?? 0), cursorX);
+  chart($("dist"), seriesOf((tr, i) => Math.hypot(tr.pos[i][0] - S.target.cx, tr.pos[i][1] - S.target.cy)), cursorX);
+}
+
+// ---- the numbers ---------------------------------------------------------------------------
+const ROWS = [
+  ["Reaction", (f) => f.rt, "ms", 0],
+  ["Movement (onset → press)", (f) => f.mt, "ms", 0],
+  ["Pause before the press", (f) => f.dwell, "ms", 0],
+  ["Button held", (f) => f.hold, "ms", 0],
+  ["Peak speed", (f) => f.peak_speed, "px/ms", 2],
+  ["Peak at", (f) => f.t_peak_frac * 100, "% of movement", 0],
+  ["Path length", (f) => f.path_len, "px", 0],
+  ["Straightness", (f) => f.path_eff * 100, "%", 1],
+  ["Furthest off the line", (f) => Math.abs(f.curv_norm) * 100, "% of distance", 1],
+  ["Submovements", (f) => f.n_sub, "", 0],
+  ["Overshoot", (f) => f.overshoot_norm * 100, "% of target", 0],
+  ["Smoothness (log jerk)", (f) => f.ldlj, "", 1],
+  ["Wobble above 5 Hz", (f) => f.jit_rms, "px rms", 2],
+  ["Press off the centre", (f) => Math.hypot(f.end_along, f.end_across), "px", 1],
+];
+function val(tr, get) {
+  if (!tr || !tr.features) return null;
+  const f = tr.features;
+  try {
+    const v = get(f);
+    return Number.isFinite(v) ? v : null;
+  } catch { return null; }
+}
+const fmt = (v, d) => (v === null ? "–" : v.toFixed(d));
+function table() {
+  const head = `<tr><th></th><th style="color:${COLOR.you}">You</th><th style="color:${COLOR.replay}">Replay</th>` +
+               `<th style="color:${COLOR.strokes}">Strokes</th><th></th></tr>`;
+  const cell = (list, get, d) => {
+    if (!list.length) return "<td>–</td>";
+    const first = val(list[0], get);
+    const vs = list.map((t) => val(t, get)).filter((v) => v !== null);
+    const avg = vs.length ? vs.reduce((a, b) => a + b, 0) / vs.length : null;
+    return `<td>${fmt(first, d)}${list.length > 1 ? `<span class="avg">(${fmt(avg, d)})</span>` : ""}</td>`;
+  };
+  const rows = ROWS.map(([name, get, unit, d]) =>
+    `<tr><td>${name}</td><td>${fmt(val(S.you, get), d)}</td>${cell(S.replay, get, d)}${cell(S.strokes, get, d)}` +
+    `<td class="unit">${unit}</td></tr>`);
+  $("stats").innerHTML = head + rows.join("");
+}
+function describe() {
+  const lines = [];
+  if (S.info && S.info.screen) lines.push(`${S.info.training_trials} recorded movements · screen ${S.info.screen.join("×")} · dpr ${dpr}`);
+  if (S.replay[0]) lines.push(`replay #1 plays recording ${S.replay[0].source}`);
+  if (S.strokes[0]) lines.push(`strokes #1 starts from recording ${S.strokes[0].source}, varied toward another`);
+  if ($("skip").checked) lines.push("models: reaction skipped (like mouseover2) - their Reaction is ~0");
+  status(lines.join("\n"));
+}
+function refresh() { draw(); charts(); table(); describe(); }
+
+// ---- model samples -------------------------------------------------------------------------
+let genSeq = 0;
+async function newSamples() {
+  const seq = ++genSeq;
+  S.target.w = Math.max(4, +$("tw").value || 30);
+  S.target.h = Math.max(4, +$("th").value || 30);
+  hint("asking the models …");
+  try {
+    const out = await post("/api/models", {
+      start: S.start, target: { cx: S.target.cx, cy: S.target.cy, w: S.target.w, h: S.target.h },
+      n: Math.min(12, Math.max(1, +$("n").value || 3)), skip_reaction: $("skip").checked,
+      no_misses: $("nomiss").checked, models: ["replay", "strokes"],
+    });
+    if (seq !== genSeq) return;
+    S.replay = out.replay || [];
+    S.strokes = out.strokes || [];
+    hint("");
+  } catch (err) {
+    hint("");
+    status(`models: ${err.message}`);
+    return;
+  }
+  refresh();
+}
+let debounce = null;
+function soon() { clearTimeout(debounce); debounce = setTimeout(newSamples, 350); }
+
+// ---- trying it yourself --------------------------------------------------------------------
+function armTry() {
+  if (S.mode !== "idle") return;
+  stopPlay();
+  S.mode = "armed";
+  S.still = null;
+  S.you = null;
+  hint("Put the pointer on the start dot and hold it still …  (Esc: cancel)");
+  refresh();
+}
+function cancelTry() {
+  S.mode = "idle";
+  S.rec = null;
+  hint("");
+  draw();
+}
+function beginTrial() {
+  const t_on = performance.now();
+  S.rec = { t_on, start: { x: S.still.cx, y: S.still.cy }, moves: [[t_on, S.still.cx, S.still.cy]],
+            downs: [], ups: [], hit: false };
+  S.mode = "recording";
+  hint("Go - click the target");
+  draw();
+}
+async function finishTrial() {
+  const rec = S.rec;
+  S.mode = "idle";
+  S.rec = null;
+  hint("measuring …");
+  draw();
+  try {
+    S.you = await post("/api/attempt", {
+      dpr, t_on: rec.t_on, start: rec.start,
+      target: { cx: S.target.cx / dpr, cy: S.target.cy / dpr, w: S.target.w / dpr, h: S.target.h / dpr },
+      moves: rec.moves, downs: rec.downs, ups: rec.ups,
+    });
+    hint("");
+  } catch (err) {
+    hint("");
+    status(`your attempt: ${err.message}`);
+  }
+  await newSamples();
+}
+setInterval(() => {
+  if (S.mode === "armed" && S.still && performance.now() - S.still.t >= 400) beginTrial();
+}, 20);
+
+// ---- pointer -------------------------------------------------------------------------------
+window.addEventListener("pointermove", (e) => {
+  if (S.mode === "recording") {
+    const r = cv.getBoundingClientRect();
+    const list = typeof e.getCoalescedEvents === "function" ? e.getCoalescedEvents() : [];
+    for (const c of (list.length ? list : [e])) S.rec.moves.push([c.timeStamp, c.clientX - r.left, c.clientY - r.top]);
+    return;
+  }
+  const p = local(e);
+  if (S.mode === "armed") {
+    const on = Math.hypot(p.x - S.start.x, p.y - S.start.y) <= START_R * dpr;
+    if (!on) { S.still = null; return; }
+    if (!S.still || Math.hypot(p.x - S.still.x, p.y - S.still.y) > 1.5 * dpr) S.still = { ...p, t: e.timeStamp };
+    return;
+  }
+  if (S.drag) {
+    if (S.drag.what === "start") {
+      S.start = { x: Math.round(p.x), y: Math.round(p.y) };
+    } else {
+      S.target.cx = Math.round(p.x - S.drag.dx);
+      S.target.cy = Math.round(p.y - S.drag.dy);
+    }
+    draw();
+    return;
+  }
+  const overStart = Math.hypot(p.x - S.start.x, p.y - S.start.y) <= (START_R + 4) * dpr;
+  cv.style.cursor = overStart || inTarget(p.x, p.y) ? "grab" : "default";
+});
+window.addEventListener("pointerdown", (e) => {
+  if (e.button !== 0) return;
+  if (S.mode === "recording") {
+    const p = local(e);
+    S.rec.downs.push([e.timeStamp, p.cx, p.cy]);
+    S.rec.hit = inTarget(p.x, p.y);
+    e.preventDefault();
+    return;
+  }
+  if (e.target !== cv || S.mode !== "idle") return;
+  const p = local(e);
+  if (Math.hypot(p.x - S.start.x, p.y - S.start.y) <= (START_R + 4) * dpr) S.drag = { what: "start" };
+  else if (inTarget(p.x, p.y)) S.drag = { what: "target", dx: p.x - S.target.cx, dy: p.y - S.target.cy };
+  if (S.drag) {
+    try { cv.setPointerCapture(e.pointerId); } catch { /* moves still come to the window */ }
+    stopPlay();
+  }
+});
+window.addEventListener("pointerup", (e) => {
+  if (e.button !== 0) return;
+  if (S.mode === "recording") {
+    const p = local(e);
+    S.rec.ups.push([e.timeStamp, p.cx, p.cy]);
+    if (S.rec.hit || S.rec.downs.length >= 4) finishTrial();
+    return;
+  }
+  if (S.drag) {
+    S.drag = null;
+    S.placed = true;
+    S.you = null;          // it no longer matches
+    newSamples();
+  }
+});
+cv.addEventListener("contextmenu", (e) => e.preventDefault());
+
+// ---- playback ------------------------------------------------------------------------------
+function stopPlay() {
+  if (S.play) { cancelAnimationFrame(S.play.raf); S.play = null; draw(); charts(); }
+}
+function play() {
+  stopPlay();
+  const list = [["you", S.you], ["replay", S.replay[0]], ["strokes", S.strokes[0]]].filter(([k, t]) => t && S.show[k]);
+  if (!list.length) return;
+  const fromOnset = $("align").checked;
+  const lead = 150;
+  const off = Object.fromEntries(list.map(([k, t]) => [k, fromOnset ? Math.max(0, onset(t) - lead) : 0]));
+  const dur = Math.max(...list.map(([k, t]) => t.pos.length - off[k])) + 400;
+  const t0 = performance.now();
+  S.play = { index: (k) => (S.play ? off[k] + (performance.now() - S.play.t0) : undefined), t0, raf: 0 };
+  const step = () => {
+    const el = performance.now() - t0;
+    draw();
+    charts(fromOnset ? el - lead : undefined);
+    if (el > dur) { S.play = null; refresh(); return; }
+    S.play.raf = requestAnimationFrame(step);
+  };
+  S.play.raf = requestAnimationFrame(step);
+}
+
+// ---- controls ------------------------------------------------------------------------------
+$("try").onclick = (e) => { e.currentTarget.blur(); armTry(); };
+$("gen").onclick = (e) => { e.currentTarget.blur(); newSamples(); };
+$("play").onclick = (e) => { e.currentTarget.blur(); play(); };
+for (const id of ["tw", "th", "n", "skip", "nomiss"]) $(id).addEventListener("change", () => { S.you = null; soon(); });
+for (const cb of document.querySelectorAll("[data-show]")) {
+  cb.addEventListener("change", () => { S.show[cb.dataset.show] = cb.checked; refresh(); });
+}
+window.addEventListener("keydown", (e) => {
+  if (e.target.tagName === "INPUT" && e.target.type === "number") return;
+  if (e.code === "Space") { e.preventDefault(); if (S.mode === "idle") armTry(); }
+  else if (e.code === "Escape") { if (S.mode !== "idle") cancelTry(); stopPlay(); }
+  else if (e.code === "KeyG" && S.mode === "idle") newSamples();
+  else if (e.code === "KeyP" && S.mode === "idle") play();
+});
+window.addEventListener("resize", resize);
+
+(async () => {
+  resize();
+  hint("Drag the dot and the target · Space: try it yourself · G: new samples · P: play");
+  try {
+    S.info = await (await fetch("/api/info")).json();
+  } catch { /* shown when the models answer */ }
+  await newSamples();
+  hint("Drag the dot and the target · Space: try it yourself · G: new samples · P: play");
+})();
+</script>
+</body>
+</html>

@@ -8,7 +8,9 @@
     "app": "electron electron/main.js",
     "cli": "node recorder.js",
     "color": "node get-color.js",
-    "test-hook": "node test_hook.js"
+    "test-hook": "node test_hook.js",
+    "calibrate": "node pixelwatch/calibrate.js",
+    "watch": "node pixelwatch/watch.js"
   },
   "dependencies": {
     "@nut-tree-fork/nut-js": "*"

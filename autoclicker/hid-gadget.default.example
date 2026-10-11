@@ -1,0 +1,34 @@
+# Copy to /etc/default/hid-gadget, edit, then:
+#     sudo systemctl restart hid-gadget
+#
+# Changing any value here rebuilds the gadget, so the host sees the device
+# disconnect and reappear with the new identity.
+#
+# Write hex as 0xNNNN (a leading zero without 0x is read as octal and rejected).
+
+# Reported as a generic Logitech optical mouse - an ordinary, very common
+# device rather than a flagship model with companion software.
+VENDOR_ID=0x046d
+PRODUCT_ID=0xc077
+DEVICE_REV=0x7200
+
+MANUFACTURER="Logitech"
+PRODUCT="USB Optical Mouse"
+
+# Most retail mice report no serial number. Leave empty to omit the descriptor;
+# the host then identifies the device by port instead of by serial.
+SERIAL=""
+
+# Milliamps requested from the host. Retail mice ask for about 100; the Linux
+# gadget default of 250 is unusual. If the device stops enumerating after
+# lowering this, put it back to 250.
+MAX_POWER=100
+
+# The original generic-Linux-gadget identity, for reference:
+#   VENDOR_ID=0x1d6b
+#   PRODUCT_ID=0x0104
+#   DEVICE_REV=0x0100
+#   MANUFACTURER="autoclicker"
+#   PRODUCT="USB HID Mouse"
+#   SERIAL="0123456789"
+#   MAX_POWER=250

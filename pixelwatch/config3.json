@@ -1,0 +1,40 @@
+{
+  "spots": [
+    {
+      "x": 3394,
+      "y": 1246,
+      "color": {
+        "r": 34,
+        "g": 30,
+        "b": 26
+      }
+    },
+    {
+      "x": 1695,
+      "y": 609,
+      "color": {
+        "r": 9,
+        "g": 0,
+        "b": 142
+      }
+    },
+    {
+      "x": 2043,
+      "y": 1253,
+      "color": {
+        "r": 22,
+        "g": 20,
+        "b": 18
+      }
+    }
+  ],
+  "tolerance": 12,
+  "intervalMinMs": 1000,
+  "intervalMaxMs": 5000,
+  "clickUrl": "http://192.168.0.131:8080/click",
+  "notify": {
+    "url": "https://ntfy.sh/rs3gem123",
+    "title": "pixelwatch",
+    "priority": "high"
+  }
+}

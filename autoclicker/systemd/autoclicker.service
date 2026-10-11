@@ -1,0 +1,16 @@
+[Unit]
+Description=Autoclicker HTTP server
+# Either mouse identity: hid-gadget.service (Logitech) or rival600.service.
+# gadget-mode switches between them and writes /etc/default/autoclicker.
+After=hid-gadget.service rival600.service network-online.target
+Wants=network-online.target
+
+[Service]
+User=root
+EnvironmentFile=-/etc/default/autoclicker
+ExecStart=/usr/bin/python3 /usr/local/bin/autoclicker.py
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

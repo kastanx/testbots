@@ -1,0 +1,12 @@
+# Game settings that must stay identical between recording and live use (handoff section 4).
+# tools.capture_frames copies this file into every session's meta.json.
+game: RuneScape (NXT client, rs2client.exe)
+resolution: [3440, 1369]   # client area of the maximized window on the 3440x1440 monitor
+display_mode: windowed     # maximized, with a title bar. Not exclusive fullscreen, so the screen capture works.
+hdr: off                   # keep Windows HDR and in-game HDR off; HDR captures look washed out
+brightness: null
+gamma: null
+notes: >-
+  Capture follows the "RuneScape" window's client area (configs/capture.yaml). Record at the
+  camera zoom levels you will use live: zoom changes object sizes. Recording and detection pause
+  while another window is in front of the game.

@@ -1,0 +1,16 @@
+{
+  "name": "servo-control",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Control a hobby servo on an Arduino Uno over USB (ServoCtl firmware)",
+  "main": "servo.js",
+  "scripts": {
+    "console": "node servo-cli.js",
+    "web": "node servo-web.js --open",
+    "upload": "node upload.js"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "serialport": "^13.0.0"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "x": 1686,
+  "y": 609,
+  "color": {
+    "r": 205,
+    "g": 78,
+    "b": 0
+  },
+  "tolerance": 12,
+  "intervalMinMs": 1000,
+  "intervalMaxMs": 5000,
+  "notify": {
+    "url": "https://ntfy.sh/rs3gem123",
+    "title": "smithing",
+    "priority": "high"
+  }
+}

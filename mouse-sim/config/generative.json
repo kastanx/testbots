@@ -1,0 +1,15 @@
+{
+  "_doc": "Sampling and post-processing for the generative model (Phase 6). The exported gen.json carries these to the browser.",
+  "include_warmup": true,
+  "_include_warmup_doc": "Train on, and draw timings from, the warm-up trials as well. The owner's warm-up trials couldn't be told apart from the rest (classifier AUC 0.54, 2026-10-09), and no more sessions will be recorded.",
+  "steps": 32,
+  "sampler": "euler",
+  "max_attempts": 4,
+  "lowpass_hz": 10,
+  "_lowpass_doc": "The continuous generated path is low-passed before it is rounded to whole pixels once (the rounding recreates the pixel steps). Lower removes more of the network's wobble but also real tremor; `python -m models.generative tune --write` picks it on the validation sessions. 0 disables.",
+  "start_ramp": 0.15,
+  "_start_ramp_doc": "The generated path's small offset from the cursor at onset fades out over this fraction of the movement (pinning it at once would be a 1 ms jump).",
+  "end_fit": "similarity",
+  "end_ramp_start": 0.3,
+  "_end_fit_doc": "The network also predicts where the movement ends relative to the target (in target-size units). similarity: rotate and scale the whole path about its start to end there; ramp: bend the path from end_ramp_start of its duration; none: ignore the prediction."
+}

@@ -1,0 +1,102 @@
+:root {
+  color-scheme: dark;
+  --bg: #3a3a3a;
+  --card: #2b2b2b;
+  --text: #dedede;
+  --dim: #9a9a9a;
+  --ok: #7fc48a;
+  --bad: #e58b7f;
+  --warn: #e2c06f;
+  --accent: #8fb3e8;
+}
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#stage {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  display: block;
+}
+
+#overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 22px;
+  color: #cfcfcf;
+  pointer-events: none;
+  padding: 0 16px;
+}
+#overlay[hidden] { display: none; }
+#overlay p { max-width: 760px; margin: 8px 0; }
+#overlay .dim { font-size: 16px; }
+
+#panel {
+  position: fixed;
+  inset: 24px;
+  margin: 0 auto;
+  max-width: 980px;
+  overflow: auto;
+  background: var(--card);
+  border-radius: 10px;
+  padding: 20px 28px;
+  box-shadow: 0 6px 30px rgba(0, 0, 0, 0.35);
+  user-select: text;
+}
+#panel[hidden] { display: none; }
+
+h1 { margin: 0 0 4px; font-size: 22px; font-weight: 600; }
+h2 { margin: 18px 0 8px; font-size: 16px; font-weight: 600; }
+section { border-top: 1px solid #3c3c3c; margin-top: 12px; padding-top: 4px; }
+.instruction { color: var(--dim); margin: 0 0 8px; }
+.dim { color: var(--dim); }
+.ok { color: var(--ok); }
+.bad { color: var(--bad); }
+.warn { color: var(--warn); }
+a { color: var(--accent); }
+code { background: #1f1f1f; padding: 1px 4px; border-radius: 3px; }
+
+.row { display: flex; gap: 14px; align-items: center; margin: 8px 0; flex-wrap: wrap; }
+.label { width: 70px; color: var(--dim); }
+textarea {
+  flex: 1;
+  min-width: 260px;
+  background: #1f1f1f;
+  color: var(--text);
+  border: 1px solid #444;
+  border-radius: 4px;
+  padding: 6px;
+  font: inherit;
+}
+button {
+  background: #4a6fa5;
+  color: white;
+  border: 0;
+  border-radius: 5px;
+  padding: 8px 14px;
+  font: inherit;
+  cursor: pointer;
+}
+button.secondary { background: #4a4a4a; }
+button:disabled { opacity: 0.5; cursor: default; }
+
+table.quality { border-collapse: collapse; margin: 6px 0; }
+table.quality td { padding: 3px 10px 3px 0; vertical-align: top; }
+table.quality tr.ok td:first-child { color: var(--ok); }
+table.quality tr.bad td:first-child { color: var(--bad); }
+#heatmap { display: block; max-width: 100%; }

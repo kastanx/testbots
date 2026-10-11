@@ -1,0 +1,45 @@
+# Where and how to capture. Written by `python -m tools.select_region`; safe to edit by hand.
+# Coordinates are physical screen pixels: [left, top, right, bottom].
+#
+# window    part of a window title (an exact title match wins). Its client area is captured
+#           and followed if the window moves. Takes precedence over region; null = use region.
+# region    fixed capture rectangle, used when window is null
+# backend   dxcam (DXGI desktop duplication, default) or mss (GDI, slower fallback)
+# max_fps   cap on captured frames per second, 0 = every new frame the screen produces
+# record    Phase 2 recorder (tools.capture_frames): interval, bursts, duplicate filter, hotkeys
+# ignore    UI panels as frame-pixel boxes [x1, y1, x2, y2] (frame = the window's client area):
+#           detections centred inside are dropped (live app, auto-labeling, labeler suggestions).
+#           They assume this window size; redo them if the window size or UI layout changes.
+# bar_filter  drops wisp detections that are mostly the cyan harvest progress bar: a thin
+#           (<= max_thickness rows) straight horizontal strip of hue in `hue`, at least
+#           bar_min_len px long, which covers at least min_share of the box's colored
+#           pixels (detector/filters.py).
+#           drop_harvested: also drop wisps that have such a bar (>= bar_min_len px long)
+#           centred across their top, i.e. someone is harvesting them: only untouched count.
+window: RuneScape
+region: [0, 23, 3440, 1392]
+backend: dxcam
+max_fps: 0
+record:
+  interval_ms: 1000
+  burst_count: 5
+  burst_gap_ms: 200
+  dedup_max_distance: 4
+  hotkeys: {toggle: L, burst: K, quit: J}
+ignore:
+  inventory: [3156, 891, 3440, 1311]
+  minimap: [3105, 0, 3440, 335]
+  xp_tracker: [2820, 0, 3030, 175]
+  top_icon: [1660, 0, 1780, 80]
+  chat: [0, 1115, 745, 1369]
+  action_bar: [1345, 1311, 2092, 1369]
+  menu_ribbon: [2735, 1311, 3440, 1369]
+bar_filter:
+  types: [wisp]
+  hue: [82, 98]
+  s_min: 100
+  v_min: 25
+  max_thickness: 9
+  min_share: 0.56
+  drop_harvested: true
+  bar_min_len: 40

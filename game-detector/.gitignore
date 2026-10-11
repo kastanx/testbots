@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+data/
+datasets/
+exports/
+runs/
+weights/
+*.pt
+*.engine
+*.onnx
+configs/*.bak
+configs/*.tmp

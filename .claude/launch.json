@@ -1,0 +1,34 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "servo-web",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "arduino/servo_control/servo-web.js"
+      ],
+      "port": 8090,
+      "autoPort": true
+    },
+    {
+      "name": "mouse-sim",
+      "runtimeExecutable": "mouse-sim/.venv/Scripts/python.exe",
+      "runtimeArgs": [
+        "mouse-sim/serve.py",
+        "--port",
+        "8765"
+      ],
+      "port": 8765
+    },
+    {
+      "name": "mouse-sim compare",
+      "runtimeExecutable": "mouse-sim/.venv/Scripts/python.exe",
+      "runtimeArgs": [
+        "mouse-sim/compare.py",
+        "--port",
+        "8771"
+      ],
+      "port": 8771
+    }
+  ]
+}

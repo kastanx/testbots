@@ -1,0 +1,12 @@
+[Unit]
+Description=USB HID mouse gadget
+Requires=sys-kernel-config.mount
+After=sys-kernel-config.mount
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/hid-gadget.sh
+
+[Install]
+WantedBy=multi-user.target

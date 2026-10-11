@@ -1,0 +1,35 @@
+# Which recording session goes into which split, and where its labels are.
+# Read by `python -m tools.build_dataset`, which writes datasets/game/ and configs/data.yaml.
+#
+# Split by session, never at random: neighbouring frames are near-duplicates, so a random
+# split makes the scores look far better than they are. Keep one session as `test` and
+# never train or tune on it.
+#
+# split:  train | val | test, or trainval for a single quick test session: its first 80%
+#         of labeled frames (in recording order) go to train, the last 20% to val.
+# tiles:  optional, crops per labeled frame for this session (overrides --tiles), to give
+#         a session with only a few labeled frames more weight.
+# labels: where the session's labels are. Default: data/labels/<session> (tools.label).
+#         A CVAT export (zip or folder, "Ultralytics YOLO Detection" or "YOLO 1.1") works too.
+#         Frames come from data/raw/<session>/ (never edited). Only frames that have a
+#         label file are used.
+names: [wisp, crater]   # the order fixes the class ids; the labeler's keys 1 and 2
+sessions:
+  test1: {split: trainval}    # quick labeling test, other players around, 2026-10-08
+  empty1: {split: train}      # empty world, vibrant colony
+  empty2: {split: trainval}   # empty world; its last 20% validates
+  empty3: {split: test}       # empty world; held out, never trained on
+  lust1: {split: train}      # Lustrous colony, empty world
+  lust2: {split: trainval}   # Lustrous; its last 20% validates
+  lust3: {split: test}       # Lustrous; held out, never trained on
+  spark1: {split: train, tiles: 4}      # Sparkling colony (yellow wisps), empty world
+  spark2: {split: trainval, tiles: 4}   # Sparkling; its last 20% validates
+  spark3: {split: test}                 # Sparkling; held out, never trained on
+  glow1: {split: train, tiles: 6}       # Glowing colony (cyan ring wisps); few frames, more crops each
+  glow2: {split: trainval, tiles: 6}    # Glowing; its last 20% validates
+  glow3: {split: test}                  # Glowing; held out, never trained on
+#  test1: {split: trainval}
+#  s01: {split: train}
+#  s02: {split: train}
+#  s03: {split: val}
+#  s04: {split: test}

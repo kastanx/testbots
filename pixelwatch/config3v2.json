@@ -1,0 +1,45 @@
+{
+  "spots": [
+    {
+      "x": 3397,
+      "y": 1211,
+      "color": {
+        "r": 36,
+        "g": 32,
+        "b": 28
+      }
+    },
+    {
+      "x": 1694,
+      "y": 516,
+      "color": {
+        "r": 9,
+        "g": 0,
+        "b": 139
+      }
+    },
+    {
+      "x": 2285,
+      "y": 465,
+      "color": {
+        "r": 43,
+        "g": 43,
+        "b": 43
+      }
+    }
+  ],
+  "tolerance": 12,
+  "intervalMinMs": 1000,
+  "intervalMaxMs": 5000,
+  "clickUrl": "http://192.168.0.131:8080/click",
+  "servo": {
+    "activeAngle": 5,
+    "homeAngle": 90,
+    "port": ""
+  },
+  "notify": {
+    "url": "https://ntfy.sh/rs3gem123",
+    "title": "pixelwatch3 v2",
+    "priority": "high"
+  }
+}

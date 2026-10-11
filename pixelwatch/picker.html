@@ -1,0 +1,178 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Pick a pixel</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: #14161a; color: #e6e8eb;
+    font: 14px/1.5 ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  }
+  header {
+    position: sticky; top: 0; z-index: 10; display: flex; align-items: center;
+    gap: 16px; flex-wrap: wrap; padding: 12px 16px;
+    background: #1b1e24; border-bottom: 1px solid #2b2f36;
+  }
+  h1 { font-size: 15px; margin: 0; font-weight: 600; }
+  .hint { color: #9aa2ad; font-size: 13px; }
+  .readout { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+  .swatch {
+    width: 26px; height: 26px; border-radius: 5px;
+    border: 1px solid #454b55; background: #000;
+  }
+  code {
+    font-family: ui-monospace, Consolas, monospace; font-size: 13px;
+    background: #262a31; padding: 2px 7px; border-radius: 4px;
+  }
+  button {
+    font: inherit; font-weight: 600; padding: 8px 18px; border-radius: 6px;
+    border: 1px solid transparent; background: #3b82f6; color: #fff; cursor: pointer;
+  }
+  button:disabled { background: #333941; color: #71787f; cursor: default; }
+  #wrap { position: relative; padding: 16px; }
+  #shot { display: block; max-width: 100%; height: auto; cursor: crosshair; }
+  #marker {
+    position: absolute; width: 15px; height: 15px; margin: -8px 0 0 -8px;
+    border: 2px solid #ff3b30; border-radius: 50%; pointer-events: none;
+    display: none; box-shadow: 0 0 0 1px #fff;
+  }
+  #lens {
+    position: fixed; right: 20px; bottom: 20px; width: 210px;
+    background: #1b1e24; border: 1px solid #2b2f36; border-radius: 8px;
+    padding: 10px; display: none;
+  }
+  #lens canvas {
+    width: 190px; height: 190px; display: block;
+    image-rendering: pixelated; border-radius: 4px; background: #000;
+  }
+  #lens p { margin: 8px 0 0; text-align: center; font-size: 12px; color: #9aa2ad; }
+  #done { display: none; padding: 40px 16px; text-align: center; font-size: 16px; }
+</style>
+
+<header>
+  <h1>Click the pixel to watch</h1>
+  <span class="hint">then nudge with arrow keys &middot; Enter to save</span>
+  <div class="readout">
+    <div class="swatch" id="swatch"></div>
+    <code id="coords">—</code>
+    <button id="save" disabled>Save</button>
+  </div>
+</header>
+
+<div id="wrap">
+  <img id="shot" alt="screenshot">
+  <div id="marker"></div>
+</div>
+
+<div id="lens"><canvas id="lensCanvas" width="19" height="19"></canvas><p id="lensLabel">—</p></div>
+<div id="done"></div>
+
+<script>
+(async () => {
+  const meta = await (await fetch("/meta")).json();   // { scale, logicalW, logicalH }
+  const img = document.getElementById("shot");
+  const marker = document.getElementById("marker");
+  const lens = document.getElementById("lens");
+  const lensCtx = document.getElementById("lensCanvas").getContext("2d");
+  const lensLabel = document.getElementById("lensLabel");
+  const swatch = document.getElementById("swatch");
+  const coords = document.getElementById("coords");
+  const saveBtn = document.getElementById("save");
+
+  lensCtx.imageSmoothingEnabled = false;
+
+  await new Promise((res) => { img.onload = res; img.src = "/shot.png"; });
+
+  // Offscreen copy at natural (physical) size, for exact pixel reads.
+  const off = document.createElement("canvas");
+  off.width = img.naturalWidth;
+  off.height = img.naturalHeight;
+  const offCtx = off.getContext("2d", { willReadFrequently: true });
+  offCtx.drawImage(img, 0, 0);
+
+  let picked = null;   // logical coords
+
+  const colorAtPhysical = (px, py) => {
+    const d = offCtx.getImageData(px, py, 1, 1).data;
+    return { r: d[0], g: d[1], b: d[2] };
+  };
+  const hex = ({ r, g, b }) =>
+    "#" + [r, g, b].map((c) => c.toString(16).padStart(2, "0")).join("");
+
+  // A logical pixel maps to the top-left of its scale x scale physical block,
+  // which is the sample nut-js colorAt returns.
+  const physOf = (lx, ly) => [Math.round(lx * meta.scale), Math.round(ly * meta.scale)];
+
+  function paint() {
+    if (!picked) return;
+    const [px, py] = physOf(picked.x, picked.y);
+    const col = colorAtPhysical(px, py);
+
+    const rect = img.getBoundingClientRect();
+    const dispScale = rect.width / img.naturalWidth;
+    marker.style.display = "block";
+    marker.style.left = (img.offsetLeft + px * dispScale) + "px";
+    marker.style.top = (img.offsetTop + py * dispScale) + "px";
+
+    swatch.style.background = hex(col);
+    coords.textContent = `x=${picked.x}  y=${picked.y}  ${hex(col)}`;
+    saveBtn.disabled = false;
+
+    lens.style.display = "block";
+    lensCtx.clearRect(0, 0, 19, 19);
+    lensCtx.drawImage(off, px - 9, py - 9, 19, 19, 0, 0, 19, 19);
+    lensCtx.strokeStyle = "#ff3b30";
+    lensCtx.lineWidth = 1;
+    lensCtx.strokeRect(9.5, 9.5, 1, 1);
+    lensLabel.textContent = `${col.r}, ${col.g}, ${col.b}`;
+  }
+
+  img.addEventListener("click", (e) => {
+    const rect = img.getBoundingClientRect();
+    const k = img.naturalWidth / rect.width;
+    const px = (e.clientX - rect.left) * k;
+    const py = (e.clientY - rect.top) * k;
+    picked = {
+      x: Math.round(px / meta.scale),
+      y: Math.round(py / meta.scale),
+    };
+    paint();
+  });
+
+  const NUDGE = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+  document.addEventListener("keydown", (e) => {
+    if (picked && NUDGE[e.key]) {
+      e.preventDefault();
+      picked.x = Math.max(0, Math.min(meta.logicalW - 1, picked.x + NUDGE[e.key][0]));
+      picked.y = Math.max(0, Math.min(meta.logicalH - 1, picked.y + NUDGE[e.key][1]));
+      paint();
+    } else if (picked && e.key === "Enter") {
+      e.preventDefault();
+      saveBtn.click();
+    }
+  });
+
+  saveBtn.addEventListener("click", async () => {
+    const [px, py] = physOf(picked.x, picked.y);
+    const color = colorAtPhysical(px, py);
+    saveBtn.disabled = true;
+    const res = await fetch("/save", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ x: picked.x, y: picked.y, color }),
+    });
+    const out = await res.json();
+    document.querySelector("header").style.display = "none";
+    document.getElementById("wrap").style.display = "none";
+    lens.style.display = "none";
+    const done = document.getElementById("done");
+    done.style.display = "block";
+    done.innerHTML =
+      `<p>Saved <code>x=${picked.x} y=${picked.y}</code> ` +
+      `<span style="display:inline-block;width:12px;height:12px;vertical-align:-1px;` +
+      `border-radius:3px;border:1px solid #454b55;background:${hex(color)}"></span> ` +
+      `<code>${hex(color)}</code></p>` +
+      `<p class="hint">${out.path}</p><p class="hint">You can close this tab.</p>`;
+  });
+})();
+</script>

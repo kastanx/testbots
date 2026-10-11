@@ -1,0 +1,27 @@
+{
+  "_doc": "Evaluation harness settings (Phase 3).",
+  "groups": {
+    "distance_edges": [0, 100, 400, null],
+    "direction_centers_deg": [0, 90, 180, 270],
+    "size_edge_px": 32
+  },
+  "min_group_n": 8,
+  "key_features": [
+    "rt", "mt", "peak_speed", "t_peak_frac", "path_eff", "curv_norm", "n_sub",
+    "overshoot_norm", "end_along_norm", "end_across_norm", "dwell", "hold", "slip",
+    "ldlj", "jit_rms", "jit_b1", "jit_b2", "jit_b3"
+  ],
+  "ratio_pass": 1.25,
+  "auc_margin": 0.05,
+  "n_ref_draws": 5,
+  "n_gen_draws": 1,
+  "c2st": {
+    "folds": 5,
+    "cnn_points": 64,
+    "cnn_epochs": 40,
+    "cnn_batch": 64,
+    "cnn_lr": 0.002,
+    "seed": 7
+  },
+  "blind": {"trials": 100, "pass_max_correct": 58}
+}

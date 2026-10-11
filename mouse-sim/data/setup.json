@@ -1,0 +1,31 @@
+{
+  "_doc": "Settings lock (handoff section 4). Fill in the nulls, then set confirmed to true; the recorder refuses real sessions until you do. Never change these mid-project: if something has to change (new mouse, new monitor), bump setup_version, note it under changes, and treat later data as a separate dataset.",
+  "setup_version": 1,
+  "confirmed": true,
+  "mouse": {
+    "model": "SteelSeries Rival 600 (USB 1038:1724)",
+    "dpi": 800,
+    "polling_hz": 1000
+  },
+  "windows": {
+    "pointer_speed": 10,
+    "enhance_pointer_precision": true,
+    "cursor_scheme": "Windows default (aero_arrow.cur)",
+    "cursor_size": 32
+  },
+  "display": {
+    "monitor": "AOC U34G2G4R3",
+    "resolution": [3440, 1440],
+    "refresh_hz": 144,
+    "scaling_percent": 100
+  },
+  "browser": {
+    "name": null,
+    "zoom_percent": 100
+  },
+  "desk": {
+    "mousepad": null,
+    "notes": null
+  },
+  "changes": []
+}

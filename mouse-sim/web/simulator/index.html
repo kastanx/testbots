@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mouse Simulator</title>
+  <link rel="stylesheet" href="/src/simulator/simulator.css">
+</head>
+<body>
+  <canvas id="stage"></canvas>
+  <aside id="toolbar">
+    <div class="row title"><b>Simulator</b><span id="data-badge" class="badge"></span></div>
+    <label class="row">Model <select id="model"></select></label>
+    <div class="row">
+      <label>Shape <select id="shape"><option value="rect">button</option><option value="circle">circle</option></select></label>
+      <label>Size <input id="size" type="number" min="4" max="256" value="32"> px</label>
+      <label id="aspect-wrap">× <input id="aspect" type="number" min="1" max="12" step="0.5" value="3"></label>
+    </div>
+    <label class="row">Speed <input id="speed" type="range" min="0.1" max="1" step="0.05" value="1"> <span id="speed-val">1×</span></label>
+    <div class="row toggles">
+      <label><input type="checkbox" id="opt-trail" checked> trail</label>
+      <label><input type="checkbox" id="opt-markers" checked> markers</label>
+      <label><input type="checkbox" id="opt-charts" checked> charts</label>
+      <label><input type="checkbox" id="opt-closest"> closest real</label>
+    </div>
+    <div class="row buttons">
+      <button id="btn-compare" title="C: one of your recorded trials (blue) next to the model (orange)">Compare with me</button>
+      <button id="btn-replay" title="R">Replay</button>
+      <button id="btn-vars" title="V">10 variations</button>
+      <button id="btn-blind">Blind test</button>
+      <button id="btn-fp">Fingerprint</button>
+      <button id="btn-full" title="F">Fullscreen</button>
+    </div>
+    <div id="status" class="status">Loading…</div>
+    <div class="hint">Click anywhere to place a target; the wheel changes its size. C compares the model with one of your recorded trials.</div>
+  </aside>
+  <section id="charts">
+    <canvas id="chart-speed"></canvas>
+    <canvas id="chart-dist"></canvas>
+  </section>
+  <div id="blind" hidden>
+    <div id="blind-msg"></div>
+    <div id="blind-buttons" hidden>
+      <button id="blind-a">1 · first was real</button>
+      <button id="blind-b">2 · second was real</button>
+      <button id="blind-replay" class="secondary">Replay pair</button>
+    </div>
+    <div id="blind-progress" class="dim"></div>
+  </div>
+  <script type="module" src="/src/simulator/main.ts"></script>
+</body>
+</html>

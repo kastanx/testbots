@@ -8,8 +8,8 @@ set "ELECTRON=%HERE%..\node_modules\.bin\electron.cmd"
 
 rem Remote dashboard. Uncomment both and fill them in after deploying it; the
 rem token must match INGEST_TOKEN on Vercel. Left commented, nothing is sent.
-rem set "GREENBOT_DASH_URL=https://your-app.vercel.app"
-rem set "GREENBOT_DASH_TOKEN="
+set "GREENBOT_DASH_URL=https://monitoring-nine-theta.vercel.app"
+set "GREENBOT_DASH_TOKEN=1c0229898ffbe5cd91c2227119e27ebe4a5062f912724ef0a683465fc168ef1d"
 
 if not exist "%PY%" (
     echo No virtualenv at %PY%

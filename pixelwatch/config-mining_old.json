@@ -1,0 +1,9 @@
+{
+  "servo2": {
+    "pressAngle": 0,
+    "pressHoldMs": 250
+  },
+  "notify": {
+    "title": "mining_old"
+  }
+}

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mouse Recorder</title>
+  <link rel="stylesheet" href="/src/recorder/recorder.css">
+</head>
+<body>
+  <canvas id="stage"></canvas>
+  <div id="overlay" hidden></div>
+  <main id="panel">
+    <h1>Recorder</h1>
+    <p id="instruction" class="instruction"></p>
+    <section>
+      <div id="setup-status">Loading…</div>
+      <p id="source" class="dim"></p>
+    </section>
+    <section>
+      <h2>Coverage</h2>
+      <canvas id="heatmap"></canvas>
+      <p id="heatmap-caption" class="dim"></p>
+      <p id="sessions-summary" class="dim"></p>
+    </section>
+    <section>
+      <h2>New session</h2>
+      <div class="row">
+        <span class="label">Role</span>
+        <label><input type="radio" name="role" value="train" checked> training</label>
+        <label><input type="radio" name="role" value="val"> validation</label>
+        <label><input type="radio" name="role" value="test"> test</label>
+      </div>
+      <p class="dim">Test sessions (2, on separate days) and validation sessions (1–2) are never used for training.
+        Record them on different days from each other.</p>
+      <div class="row">
+        <span class="label">Feeling</span>
+        <label><input type="radio" name="feeling" value="fresh"> fresh</label>
+        <label><input type="radio" name="feeling" value="normal" checked> normal</label>
+        <label><input type="radio" name="feeling" value="tired"> tired</label>
+      </div>
+      <div class="row">
+        <span class="label">Notes</span>
+        <textarea id="notes" rows="2" placeholder="anything unusual: different chair, coffee, time of day…"></textarea>
+      </div>
+      <div class="row">
+        <span class="label"></span>
+        <label><input type="checkbox" id="dryrun"> Dry run (saved to data/dryrun/, never used)</label>
+      </div>
+      <div class="row">
+        <span class="label"></span>
+        <button id="start">Start session (fullscreen)</button>
+        <button id="rate-check" class="secondary">Check event rate (5 s)</button>
+      </div>
+      <p id="error" class="bad" hidden></p>
+      <div id="rate-result"></div>
+      <p class="dim">10–15 minutes per session, at most 2–3 sessions a day, spread over different days and times
+        of day. The session ends by itself after the configured time.</p>
+    </section>
+    <section id="last-session" hidden></section>
+  </main>
+  <script type="module" src="/src/recorder/main.ts"></script>
+</body>
+</html>

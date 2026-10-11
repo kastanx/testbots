@@ -1,0 +1,49 @@
+{
+  "spots": [
+    {
+      "x": 497,
+      "y": 253,
+      "color": {
+        "r": 5,
+        "g": 16,
+        "b": 105
+      }
+    },
+    {
+      "x": 341,
+      "y": 359,
+      "color": {
+        "r": 253,
+        "g": 185,
+        "b": 0
+      }
+    },
+    {
+      "x": 497,
+      "y": 252,
+      "color": {
+        "r": 34,
+        "g": 30,
+        "b": 27
+      }
+    }
+  ],
+  "tolerance": 12,
+  "intervalMinMs": 100,
+  "intervalMaxMs": 150,
+  "servo1": {
+    "tapAngle": 5
+  },
+  "servo2": {
+    "tapAngle": 0
+  },
+  "tap": {
+    "holdMs": 250,
+    "gapMs": 200
+  },
+  "step3Delay": {
+    "minMs": 500,
+    "maxMs": 1000
+  },
+  "port": ""
+}

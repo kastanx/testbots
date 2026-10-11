@@ -1,0 +1,7 @@
+# Written by tools/build_dataset.py from configs/dataset.yaml
+path: C:\Users\jiri\Desktop\testbots\game-detector\datasets\game
+train: images/train
+val: images/val
+test: images/test
+names: {0: wisp, 1: crater}
+infer_imgsz: 1920

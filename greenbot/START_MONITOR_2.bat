@@ -16,6 +16,9 @@ set "HERE=%~dp0"
 set "PY=%HERE%.venv\Scripts\python.exe"
 set "ELECTRON=%HERE%..\node_modules\.bin\electron.cmd"
 
+set "GREENBOT_DASH_URL=https://monitoring-nine-theta.vercel.app"
+set "GREENBOT_DASH_TOKEN=1c0229898ffbe5cd91c2227119e27ebe4a5062f912724ef0a683465fc168ef1d"
+
 if not exist "%ELECTRON%" (
     echo Electron not found at %ELECTRON%
     pause

@@ -1,0 +1,23 @@
+{
+  "_doc": "Motion matching (Phase 5). Weights and limits are tuned on the validation sessions with `python -m models.motion_matching tune`.",
+  "weights": {
+    "log_distance": 4.0,
+    "direction_rad": 2.0,
+    "log_size_along": 1.5,
+    "log_size_across": 0.5,
+    "start": 1.0,
+    "shape": 0.25
+  },
+  "limits": {
+    "direction_deg": 15,
+    "distance_ratio": [0.85, 1.15],
+    "size_ratio": [0.7, 1.4],
+    "across_ratio": [0.4, 2.5]
+  },
+  "top_k": 8,
+  "similarity_tau": 0.15,
+  "include_warmup": true,
+  "_include_warmup_doc": "Use the warm-up trials as well. The owner's warm-up trials couldn't be told apart from the rest (classifier AUC 0.54, 2026-10-09), and no more sessions will be recorded.",
+  "warp_lowpass_hz": 40,
+  "_warp_lowpass_doc": "Warped trials are rebuilt from a low-passed copy of the recorded path and rounded to whole pixels once; rounding already-rounded positions again doubles the pixel-step noise. 0 disables. 40 Hz was chosen on the owner's data (2026-10-09, day 1 library -> day 2 test): 20-50 Hz jitter ratio 0.87 and 18/18 key features, against 1.55 and 17/18 at 30 Hz."
+}

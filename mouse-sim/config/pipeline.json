@@ -1,0 +1,27 @@
+{
+  "_doc": "Thresholds for validation, conversion, segmentation and features. Speeds are physical px per ms, times are ms.",
+  "polling_hz_default": 1000,
+  "validate": {
+    "min_event_rate_frac": 0.9,
+    "max_gap_share": 0.05,
+    "max_duplicate_share": 0.001,
+    "min_whole_pixel_share": 0.99,
+    "min_trials": 20
+  },
+  "motion_speed": 1.5,
+  "_motion_speed_doc": "Event-rate and gap checks only use intervals where the cursor moves at least this fast (px/ms): slower than about 1 px per poll the mouse legitimately skips reports.",
+  "motion_window_ms": 10,
+  "burst_gap_ms": 20,
+  "timeline_clock": "auto",
+  "_timeline_clock_doc": "Which timestamps build the 1 ms timelines: t_grid (snapped to the polling grid), raw (as the browser delivered them), or auto (per session, whichever gives the lower speed noise).",
+  "smooth": {"window_ms": 21, "polyorder": 3},
+  "jerk_smooth": {"window_ms": 41, "polyorder": 4},
+  "onset": {"speed": 0.1, "min_ms": 30, "backtrack_speed": 0.02},
+  "stop_speed": 0.02,
+  "max_pause_mid_movement_ms": 2000,
+  "submovement": {"dip_frac": 0.5, "min_peak": 0.05, "min_peak_rel": 0.1, "smooth_ms": 8, "min_px": 2.0},
+  "jitter": {"lowpass_hz": 5.0, "bands_hz": [[5, 10], [10, 20], [20, 50]], "spectrum_max_hz": 50},
+  "speed_profile_points": 101,
+  "fitts_min_group_n": 5,
+  "max_clicks_per_trial": 8
+}

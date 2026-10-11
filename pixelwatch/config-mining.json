@@ -1,0 +1,42 @@
+{
+  "pixels": {
+    "A": [
+      {
+        "x": 1694,
+        "y": 605,
+        "color": {
+          "r": 9,
+          "g": 0,
+          "b": 139
+        }
+      }
+    ]
+  },
+  "tolerance": 12,
+  "servo2": {
+    "tapAngle": 0
+  },
+  "servo1": {
+    "tapAngle": 5
+  },
+  "tap": {
+    "holdMs": 250,
+    "gapMs": 200
+  },
+  "pixelA": {
+    "intervalMinMs": 3000,
+    "intervalMaxMs": 5000
+  },
+  "inventory": {
+    "intervalMinMs": 3000,
+    "intervalMaxMs": 5000,
+    "minOccupied": 24,
+    "recheckMs": 1000
+  },
+  "notify": {
+    "url": "https://ntfy.sh/rs3gem123",
+    "title": "mining",
+    "priority": "high"
+  },
+  "port": ""
+}

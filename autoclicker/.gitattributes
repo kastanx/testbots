@@ -1,0 +1,4 @@
+# These are executed on Linux; CRLF breaks the shebang and systemd units.
+*.sh    text eol=lf
+*.py    text eol=lf
+*.service text eol=lf

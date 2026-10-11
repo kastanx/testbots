@@ -1,0 +1,21 @@
+# environments and builds
+.venv/
+__pycache__/
+.pytest_cache/
+web/node_modules/
+web/dist/
+
+# recordings and everything derived from them (large; back them up separately)
+data/raw/
+data/dryrun/
+data/processed/
+data/blindtests/
+
+# trained models and the simulator bundle (regenerate with the commands in README.md)
+models/generative/runs/
+models/export/
+
+# generated reports (the leaderboard is kept)
+reports/*
+!reports/leaderboard.md
+web/public/ort/

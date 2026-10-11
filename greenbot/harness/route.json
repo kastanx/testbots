@@ -9,7 +9,7 @@
   },
   "breaks": {
     "short": {
-      "enabled": true,
+      "enabled": false,
       "minPlayMs": 900000,
       "maxPlayMs": 2100000,
       "minIdleMs": 20000,
@@ -26,16 +26,16 @@
   "daily": {
     "minPlayBeforeMs": 2700000,
     "lunch": {
-      "enabled": true,
+      "enabled": false,
       "at": "12:30",
-      "minMs": 1800000,
-      "maxMs": 3000000
+      "minMs": 1200000,
+      "maxMs": 1800000
     },
     "dinner": {
-      "enabled": true,
+      "enabled": false,
       "at": "18:30",
-      "minMs": 2700000,
-      "maxMs": 4500000
+      "minMs": 1800000,
+      "maxMs": 2400000
     },
     "sleep": {
       "enabled": true,
